@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarura Petroleum Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: {
+                            DEFAULT: "hsl(var(--primary))",
+                            foreground: "hsl(var(--primary-foreground))",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(var(--secondary))",
+                            foreground: "hsl(var(--secondary-foreground))",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(var(--destructive))",
+                            foreground: "hsl(var(--destructive-foreground))",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(var(--muted))",
+                            foreground: "hsl(var(--muted-foreground))",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(var(--accent))",
+                            foreground: "hsl(var(--accent-foreground))",
+                        },
+                        popover: {
+                            DEFAULT: "hsl(var(--popover))",
+                            foreground: "hsl(var(--popover-foreground))",
+                        },
+                        card: {
+                            DEFAULT: "hsl(var(--card))",
+                            foreground: "hsl(var(--card-foreground))",
+                        },
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)",
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        .typewriter::after {
+            content: '|';
+            animation: blink 0.7s infinite;
+        }
+        :root {
+            --background: 0 0% 100%;
+            --foreground: 222.2 84% 4.9%;
+            --card: 0 0% 100%;
+            --card-foreground: 222.2 84% 4.9%;
+            --popover: 0 0% 100%;
+            --popover-foreground: 222.2 84% 4.9%;
+            --primary: 221.2 83.2% 53.3%;
+            --primary-foreground: 210 40% 98%;
+            --secondary: 210 40% 96.1%;
+            --secondary-foreground: 222.2 47.4% 11.2%;
+            --muted: 210 40% 96.1%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --accent: 210 40% 96.1%;
+            --accent-foreground: 222.2 47.4% 11.2%;
+            --destructive: 0 84.2% 60.2%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 214.3 31.8% 91.4%;
+            --input: 214.3 31.8% 91.4%;
+            --ring: 221.2 83.2% 53.3%;
+            --radius: 0.5rem;
+        }
+        .dark {
+            --background: 222.2 84% 4.9%;
+            --foreground: 210 40% 98%;
+            --card: 222.2 84% 4.9%;
+            --card-foreground: 210 40% 98%;
+            --popover: 222.2 84% 4.9%;
+            --popover-foreground: 210 40% 98%;
+            --primary: 217.2 91.2% 59.8%;
+            --primary-foreground: 222.2 47.4% 11.2%;
+            --secondary: 217.2 32.6% 17.5%;
+            --secondary-foreground: 210 40% 98%;
+            --muted: 217.2 32.6% 17.5%;
+            --muted-foreground: 215 20.2% 65.1%;
+            --accent: 217.2 32.6% 17.5%;
+            --accent-foreground: 210 40% 98%;
+            --destructive: 0 62.8% 30.6%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 217.2 32.6% 17.5%;
+            --input: 217.2 32.6% 17.5%;
+            --ring: 224.3 76.3% 48%;
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground transition-colors duration-300 min-h-screen flex items-center justify-center">
+    <div class="absolute top-4 right-4">
+        <button id="darkModeToggle" class="p-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+            <i id="themeIcon" class="fas fa-sun text-gray-900 dark:text-white"></i>
+        </button>
+    </div>
+    <div class="container mx-auto px-4 py-8 md:py-12 lg:py-16">
+        <div class="flex flex-col lg:flex-row items-stretch justify-center shadow-2xl rounded-3xl overflow-hidden max-w-6xl mx-auto">
+            <!-- Left side: Background image and company info -->
+            <div class="w-full lg:w-1/2 bg-cover bg-center relative min-h-[300px] lg:min-h-[500px] hidden lg:block" style="background-image: url('https://images.unsplash.com/photo-1581094288338-2314dddb7ece?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');">
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-900/90 to-blue-800/70 flex flex-col justify-center p-8 md:p-12">
+                    <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-white">Sarura Petroleum Ltd</h1>
+                    <div class="typewriter text-2xl md:text-3xl lg:text-4xl font-semibold text-blue-200">Your Energy Partner</div>
+                    <p class="mt-4 md:mt-6 text-blue-100 max-w-md text-sm md:text-base">Powering progress and fueling your journey with innovative energy solutions.</p>
+                </div>
+            </div>
+
+            <!-- Right side: Login form -->
+            <div class="w-full lg:w-1/2 bg-white dark:bg-gray-900 p-8 md:p-12 flex flex-col justify-center">
+                <div class="mb-6 md:mb-8 flex items-center justify-center">
+                    <img src="sarura.jpeg" alt="Sarura Petroleum Logo" class="w-16 h-16 md:w-20 md:h-20 rounded-full shadow-lg">
+                </div>
+                <h2 class="text-xl md:text-2xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">Login to Your Account</h2>
+                <form id="loginForm" class="space-y-4 md:space-y-6">
+                    <div>
+                        <label for="email" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
+                        <input type="email" id="email" name="email" required
+                            class="w-full px-3 py-2 md:px-4 md:py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200">
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Password</label>
+                        <input type="password" id="password" name="password" required
+                            class="w-full px-3 py-2 md:px-4 md:py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input id="remember-me" name="remember-me" type="checkbox"
+                                class="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary">
+                            <label for="remember-me" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">Remember me</label>
+                        </div>
+                        <a href="#" class="text-sm font-medium text-primary hover:underline">Forgot password?</a>
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-primary text-white py-2 px-4 rounded-md shadow-md font-medium hover:bg-primary/90 focus:ring-2 focus:ring-offset-2 focus:ring-primary transition duration-200">Login</button>
+                </form>
+                <div class="mt-6 text-sm text-center text-gray-700 dark:text-gray-300">
+                    Don't have an account? <a href="#" class="text-primary hover:underline">Sign up here</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const toggleButton = document.getElementById('darkModeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const html = document.documentElement;
+
+        toggleButton.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            if (html.classList.contains('dark')) {
+                themeIcon.classList.replace('fa-sun', 'fa-moon');
+            } else {
+                themeIcon.classList.replace('fa-moon', 'fa-sun');
+            }
+        });
+
+        // Check for saved theme preference or use system preference
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+            themeIcon.classList.remove('fa-sun');
+            themeIcon.classList.add('fa-moon');
+        } else {
+            html.classList.remove('dark');
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+        }
+
+    </script>
+</body>
+</html>

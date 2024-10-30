@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarura Petroleum Logistics Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        .dark .glass {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-white dark:bg-gray-800 shadow-md glass fixed inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition duration-200 ease-in-out z-10">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold text-primary">Sarura Petroleum</h1>
+            </div>
+            <nav class="mt-6">
+                <a href="#" class="block py-2 px-4 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700" onclick="showTab('trucks')">
+                    <i class="fas fa-truck mr-2"></i> Trucks & Compartments
+                </a>
+                <a href="#" class="block py-2 px-4 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700" onclick="showTab('new-truck')">
+                    <i class="fas fa-plus mr-2"></i> New Truck
+                </a>
+                <a href="#" class="block py-2 px-4 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700" onclick="showTab('loading-reports')">
+                    <i class="fas fa-file-alt mr-2"></i> Loading Reports
+                </a>
+                <a href="#" class="block py-2 px-4 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700" onclick="showTab('shortages')">
+                    <i class="fas fa-exclamation-triangle mr-2"></i> Shortages
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden md:ml-64">
+            <!-- Header -->
+            <header class="bg-white dark:bg-gray-800 shadow-sm glass sticky top-0 z-10">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between h-16">
+                        <div class="flex items-center">
+                            <button id="sidebarToggle" class="p-2 rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 md:hidden">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                            <h2 class="text-2xl font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-3xl sm:tracking-tight ml-2 md:ml-0">
+                                Logistics Dashboard
+                            </h2>
+                        </div>
+                        <div class="flex items-center">
+                            <button id="themeToggle" class="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
+                                <i class="fas fa-sun text-yellow-500 dark:text-gray-400" id="themeIcon"></i>
+                            </button>
+                            <button id="backToDashboard" class="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 ml-2">
+                                <i class="fas fa-home text-gray-500 dark:text-gray-400"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main content area -->
+            <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+                <!-- Trucks & Compartments -->
+                <div id="trucks" class="tab-content">
+                    <h2 class="text-2xl font-bold mb-4">Trucks & Compartments</h2>
+                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 glass">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Truck No</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Compartments</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Capacity</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">SP001</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">4</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">36,000 L</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <a href="#" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-600">Edit</a>
+                                        <a href="#" class="ml-2 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-600">Delete</a>
+                                    </td>
+                                </tr>
+                                <!-- Add more rows as needed -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- New Truck -->
+                <div id="new-truck" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold mb-4">Add New Truck</h2>
+                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 glass">
+                        <form>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="truckNo" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Truck Number</label>
+                                    <input type="text" id="truckNo" name="truckNo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+                                <div>
+                                    <label for="compartments" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Number of Compartments</label>
+                                    <input type="number" id="compartments" name="compartments" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+                                <div>
+                                    <label for="capacity" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Total Capacity (L)</label>
+                                    <input type="number" id="capacity" name="capacity" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+                                <div>
+                                    <label for="manufacturer" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Manufacturer</label>
+                                    <input type="text" id="manufacturer" name="manufacturer" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    Add Truck
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Loading Reports -->
+                <div id="loading-reports" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold mb-4">Loading Reports</h2>
+                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 glass">
+                        <div class="flex justify-between items-center mb-4">
+                            <input type="text" placeholder="Search reports..." class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <div class="flex items-center">
+                                <button class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-l-md"><i class="fas fa-chevron-left"></i></button>
+                                <span class="px-4 py-1 bg-gray-100 dark:bg-gray-600">October 2024</span>
+                                <button class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-r-md"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Truck No</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Order No</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Loading Depot</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Product</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Vol @OBS</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Vol @20</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">14-Oct-2024</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">SP001</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">ORD12345</td>
+                                    <td  class="px-6 py-4 whitespace-nowrap">KPCELD</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">AGO</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">36000</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">35899</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <a href="#" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-600"><i class="fas fa-info-circle"></i></a>
+                                        <a href="#" class="ml-2 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-600"><i class="fas fa-trash"></i></a>
+                                    </td>
+                                </tr>
+                                <!-- Add more rows as needed -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Shortages -->
+                <div id="shortages" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold mb-4">Shortage Analysis</h2>
+                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 glass">
+                        <div class="flex justify-between items-center mb-4">
+                            <input type="text" placeholder="Search by Truck No, Product, or Date" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <div class="flex items-center">
+                                <button class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-l-md"><i class="fas fa-chevron-left"></i></button>
+                                <span class="px-4 py-1 bg-gray-100 dark:bg-gray-600">October 2024</span>
+                                <button class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-r-md"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Truck No</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Product</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Vol @20</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Offload 1</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Point 1</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Offloaded</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Shortage</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">14-Oct-2024</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">SP001</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">AGO</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">35899</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">35800</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">Station A</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">35800</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-red-600">-99</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-600">Details</button>
+                                        <button class="ml-2 text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-600">Edit</button>
+                                    </td>
+                                </tr>
+                                <!-- Add more rows as needed -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+
+        
+        
+                
+        // Sidebar toggle functionality
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+        });
+
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const html = document.documentElement;
+
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            if (html.classList.contains('dark')) {
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                localStorage.theme = 'dark';
+            } else {
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                localStorage.theme = 'light';
+            }
+        });
+
+        // Check for saved theme preference or use system preference
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+            themeIcon.classList.remove('fa-sun');
+            themeIcon.classList.add('fa-moon');
+        } else {
+            html.classList.remove('dark');
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+        }
+
+        // Tab switching functionality
+        function showTab(tabId) {
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+        }
+
+        // Show the first tab by default
+        showTab('trucks');
+
+        // Back to dashboard button
+        const backToDashboard = document.getElementById('backToDashboard');
+        backToDashboard.addEventListener('click', () => {
+            window.location.href = 'dashboard.html';
+        });
+
+    </script>
+</body>
+</html>

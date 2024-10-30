@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarura Petroleum Subcontractors</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        .dark .glass {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: {
+                            DEFAULT: "hsl(var(--primary))",
+                            foreground: "hsl(var(--primary-foreground))",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(var(--secondary))",
+                            foreground: "hsl(var(--secondary-foreground))",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(var(--destructive))",
+                            foreground: "hsl(var(--destructive-foreground))",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(var(--muted))",
+                            foreground: "hsl(var(--muted-foreground))",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(var(--accent))",
+                            foreground: "hsl(var(--accent-foreground))",
+                        },
+                        popover: {
+                            DEFAULT: "hsl(var(--popover))",
+                            foreground: "hsl(var(--popover-foreground))",
+                        },
+                        card: {
+                            DEFAULT: "hsl(var(--card))",
+                            foreground: "hsl(var(--card-foreground))",
+                        },
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)",
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-white dark:bg-gray-800 shadow-md glass fixed inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition duration-200 ease-in-out z-10">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold text-primary">Sarura Petroleum</h1>
+            </div>
+            <nav class="mt-6">
+                <a href="#" class="block py-2 px-4 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i class="fas fa-chart-line mr-2"></i> Dashboard
+                </a>
+                <a href="#" class="block py-2 px-4 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i class="fas fa-truck mr-2"></i> Subcontractors
+                </a>
+                <a href="#" class="block py-2 px-4 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i class="fas fa-shopping-cart mr-2"></i> Purchases
+                </a>
+                <a href="#" class="block py-2 px-4 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i class="fas fa-dollar-sign mr-2"></i> Sales
+                </a>
+                <a href="#" class="block py-2 px-4 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i class="fas fa-chart-bar mr-2"></i> Profits
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden md:ml-64">
+            <!-- Header -->
+            <header class="bg-white dark:bg-gray-800 shadow-sm glass sticky top-0 z-10">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between h-16">
+                        <div class="flex items-center">
+                            <button id="sidebarToggle" class="p-2 rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 md:hidden">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                            <h2 class="text-2xl font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-3xl sm:tracking-tight ml-2 md:ml-0">
+                                Subcontractors Management
+                            </h2>
+                        </div>
+                        <div class="flex items-center">
+                            <button id="themeToggle" class="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
+                                <i class="fas fa-sun text-yellow-500 dark:text-gray-400" id="themeIcon"></i>
+                            </button>
+
+                            <button id="backToDashboard" class="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 ml-2">
+                                <i class="fas fa-home text-gray-500 dark:text-gray-400"></i>
+                            </button>
+                            
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main content area -->
+            <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+                <!-- Job Overview -->
+                <section class="mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Job Overview</h3>
+                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 glass">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="entity" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Entity</label>
+                                <select id="entity" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600">
+                                    <option value="">Select Entity</option>
+                                    <option value="Entity A">Entity A</option>
+                                    <option value="Entity B">Entity B</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="transporter" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Transporter</label>
+                                <select id="transporter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600">
+                                    <option value="">All Transporters</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="paymentStatus" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Status</label>
+                                <select id="paymentStatus" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600">
+                                    <option>All</option>
+                                    <option>Paid</option>
+                                    <option>Partially Paid</option>
+                                    <option>Unpaid</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Truck Details -->
+                <section class="mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Truck Details</h3>
+                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 glass overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Truck No.</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Volume Loaded (L)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Volume Offloaded (L)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Shortage (L)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="truckDetailsBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <!-- Truck details will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Payment Information -->
+                <section class="mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Payment Information</h3>
+                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 glass overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Truck No.</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount Paid by Entity</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount Paid to Transporter</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentInfoBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <!-- Payment information will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Data Visualization -->
+                <section class="mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Data Visualization</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 glass">
+                            <h4 class="text-lg font-medium mb-2">Volume Loaded vs Offloaded</h4>
+                            <div class="chart-container">
+                                <canvas id="volumeChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 glass">
+                            <h4 class="text-lg font-medium mb-2">Payment Status</h4>
+                            <div class="chart-container">
+                                <canvas id="paymentChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Excel Download and Upload -->
+                <section class="mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Data Management</h3>
+                    <div  class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 glass">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="text-lg font-medium mb-2">Download Data</h4>
+                                <button id="downloadExcel" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark">
+                                    Download Excel
+                                </button>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-medium mb-2">Upload Data</h4>
+                                <input type="file" id="uploadExcel" accept=".xlsx, .xls" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Sample data (replace with actual data from your backend)
+        const initialData = {
+            'Entity A': {
+                'Transporter X': [
+                    { truckNo: 'T001', volumeLoaded: 5000, volumeOffloaded: 4950, shortage: 50, status: 'Completed', amountPaidByEntity: 10000, amountPaidToTransporter: 9000, balance: 1000 },
+                    { truckNo: 'T002', volumeLoaded: 7000, volumeOffloaded: 6980, shortage: 20, status: 'Completed', amountPaidByEntity: 14000, amountPaidToTransporter: 12000, balance: 2000 },
+                ],
+                'Transporter Y': [
+                    { truckNo: 'T003', volumeLoaded: 6000, volumeOffloaded: 5990, shortage: 10, status: 'In Transit', amountPaidByEntity: 12000, amountPaidToTransporter: 10000, balance: 2000 },
+                ],
+            },
+            'Entity B': {
+                'Transporter Y': [
+                    { truckNo: 'T004', volumeLoaded: 5500, volumeOffloaded: 5480, shortage: 20, status: 'Completed', amountPaidByEntity: 11000, amountPaidToTransporter: 9500, balance: 1500 },
+                ],
+                'Transporter Z': [
+                    { truckNo: 'T005', volumeLoaded: 6500, volumeOffloaded: 6450, shortage: 50, status: 'In Transit', amountPaidByEntity: 13000, amountPaidToTransporter: 11000, balance: 2000 },
+                ],
+            },
+        };
+
+        let filteredData = [];
+        let volumeChart, paymentChart;
+
+        // DOM elements
+        const entitySelect = document.getElementById('entity');
+        const transporterSelect = document.getElementById('transporter');
+        const truckDetailsBody = document.getElementById('truckDetailsBody');
+        const paymentInfoBody = document.getElementById('paymentInfoBody');
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const html = document.documentElement;
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+        const downloadExcelBtn = document.getElementById('downloadExcel');
+        const uploadExcelInput = document.getElementById('uploadExcel');
+
+        // Initialize page
+        function initPage() {
+            populateEntitySelect();
+            entitySelect.addEventListener('change', handleEntityChange);
+            transporterSelect.addEventListener('change', handleTransporterChange);
+            themeToggle.addEventListener('click', toggleTheme);
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            downloadExcelBtn.addEventListener('click', downloadExcel);
+            uploadExcelInput.addEventListener('change', handleFileUpload);
+
+            // Set initial theme
+            setTheme(localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches));
+
+            // Initial data load
+            handleEntityChange();
+        }
+
+        function populateEntitySelect() {
+            entitySelect.innerHTML = '<option value="">Select Entity</option>';
+            Object.keys(initialData).forEach(entity => {
+                const option = document.createElement('option');
+                option.value = entity;
+                option.textContent = entity;
+                entitySelect.appendChild(option);
+            });
+        }
+
+        function handleEntityChange() {
+            const selectedEntity = entitySelect.value;
+            transporterSelect.innerHTML = '<option value="">All Transporters</option>';
+            
+            if (selectedEntity) {
+                Object.keys(initialData[selectedEntity]).forEach(transporter => {
+                    const option = document.createElement('option');
+                    option.value = transporter;
+                    option.textContent = transporter;
+                    transporterSelect.appendChild(option);
+                });
+            }
+
+            updateFilteredData();
+        }
+
+        function handleTransporterChange() {
+            updateFilteredData();
+        }
+
+        function updateFilteredData() {
+            const selectedEntity = entitySelect.value;
+            const selectedTransporter = transporterSelect.value;
+
+            if (selectedEntity) {
+                const entityData = initialData[selectedEntity];
+                if (selectedTransporter) {
+                    filteredData = entityData[selectedTransporter] || [];
+                } else {
+                    filteredData = Object.values(entityData).flat();
+                }
+            } else {
+                filteredData = Object.values(initialData).flatMap(entity => Object.values(entity).flat());
+            }
+
+            updateTables();
+            updateCharts();
+        }
+
+        function updateTables() {
+            // Update Truck Details table
+            truckDetailsBody.innerHTML = filteredData.map(truck => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">${truck.truckNo}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${truck.volumeLoaded}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${truck.volumeOffloaded}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${truck.shortage}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${truck.status}</td>
+                </tr>
+            `).join('');
+
+            // Update Payment Information table
+            paymentInfoBody.innerHTML = filteredData.map(payment => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">${payment.truckNo}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">$${payment.amountPaidByEntity}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">$${payment.amountPaidToTransporter}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">$${payment.balance}</td>
+                </tr>
+            `).join('');
+        }
+
+        function updateCharts() {
+            const isDark = html.classList.contains('dark');
+            const textColor = isDark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
+            // Volume Chart
+            const volumeCtx = document.getElementById('volumeChart').getContext('2d');
+            if (volumeChart) volumeChart.destroy();
+            volumeChart = new Chart(volumeCtx, {
+                type: 'bar',
+                data: {
+                    labels: filteredData.map(truck => truck.truckNo),
+                    datasets: [
+                        {
+                            label: 'Volume Loaded',
+                            data: filteredData.map(truck => truck.volumeLoaded),
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        },
+                        {
+                            label: 'Volume Offloaded',
+                            data: filteredData.map(truck => truck.volumeOffloaded),
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Volume (L)',
+                                color: textColor,
+                            },
+                            ticks: { color: textColor },
+                            grid: { color: gridColor },
+                        },
+                        x: {
+                            ticks: { color: textColor },
+                            grid: { color: gridColor },
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: textColor },
+                        },
+                    },
+                }
+            });
+
+            // Payment Chart
+            const paymentCtx = document.getElementById('paymentChart').getContext('2d');
+            if (paymentChart) paymentChart.destroy();
+            const totalPaid = filteredData.reduce((sum, payment) => sum + payment.amountPaidToTransporter, 0);
+            const totalBalance = filteredData.reduce((sum, payment) => sum + payment.balance, 0);
+            paymentChart = new Chart(paymentCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Paid', 'Balance'],
+                    datasets: [{
+                        data: [totalPaid, totalBalance],
+                        backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: textColor },
+                        },
+                    },
+                }
+            });
+        }
+
+        function setTheme(isDark) {
+            if (isDark) {
+                html.classList.add('dark');
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                localStorage.theme = 'dark';
+            } else {
+                html.classList.remove('dark');
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                localStorage.theme = 'light';
+            }
+            updateCharts();
+        }
+
+        function toggleTheme() {
+            setTheme(!html.classList.contains('dark'));
+        }
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('-translate-x-full');
+        }
+
+        function downloadExcel() {
+            const worksheet = XLSX.utils.json_to_sheet(filteredData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+            XLSX.writeFile(workbook, "subcontractor_data.xlsx");
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                console.log(jsonData); // Process the uploaded data as needed
+                alert('Data uploaded successfully!');
+                // Here you would typically update your data structures and re-render the tables and charts
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Initialize the page when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', initPage);
+
+                // Back to dashboard button
+                const backToDashboard = document.getElementById('backToDashboard');
+        backToDashboard.addEventListener('click', () => {
+            window.location.href = 'dashboard.html';
+        });
+
+    </script>
+</body>
+</html>
