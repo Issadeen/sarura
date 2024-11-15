@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subcontractors - Sarura Petroleum</title>
+    <title>Entity Payment - Sarura Petroleum</title>
     <link rel="icon" href="logo.jpg" type="image/jpg">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
@@ -33,7 +34,7 @@
         }
 
         .dark .glass {
-            background: rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 1);
             border: 1px solid rgba(255, 255, 255, 0.18);
         }
 
@@ -255,32 +256,6 @@
             if (transporterSelect) transporterSelect.addEventListener('change', handleTransporterChange);
             if (downloadExcelBtn) downloadExcelBtn.addEventListener('click', downloadExcel);
             if (uploadExcelInput) uploadExcelInput.addEventListener('change', handleFileUpload);
-
-            // Add these styles to all select elements
-            const selects = document.querySelectorAll('select');
-            selects.forEach(select => {
-                select.classList.add('form-select', 'w-full', 'rounded', 'border', 'p-2', 
-                    'dark:bg-gray-800', 'dark:border-gray-600', 'dark:text-gray-200',
-                    'focus:outline-none', 'focus:ring-2', 'focus:ring-custom-accent',
-                    'hover:border-gray-400', 'dark:hover:border-gray-500');
-            });
-
-            // Add these debug logs
-            if (entitySelect) {
-                console.log('Entity select found:', entitySelect);
-                entitySelect.addEventListener('change', (e) => {
-                    console.log('Entity changed to:', e.target.value);
-                    handleEntityChange();
-                });
-            }
-
-            if (transporterSelect) {
-                console.log('Transporter select found:', transporterSelect);
-                transporterSelect.addEventListener('change', (e) => {
-                    console.log('Transporter changed to:', e.target.value);
-                    handleTransporterChange();
-                });
-            }
         }
 
         // Initialize Firebase listeners
@@ -293,18 +268,7 @@
             const db = firebase.firestore();
             console.log("User ID:", user.uid); // Debug user ID
 
-            // First get all subcontractors to populate entities
-            db.collection('users').doc(user.uid).collection('subcontractors')
-                .get()
-                .then(snapshot => {
-                    const entities = [...new Set(snapshot.docs
-                        .map(doc => doc.data().entityName)
-                        .filter(Boolean)
-                    )];
-                    populateEntitySelect(entities);
-                });
-
-            // Then get all transport data
+            // Listen to both collections
             Promise.all([
                 db.collection('users').doc(user.uid).collection('subcontractors').get(),
                 db.collection('users').doc(user.uid).collection('transports').get()
@@ -318,8 +282,7 @@
                     if (data.entityName && data.transporterName) {
                         originalData.push({
                             id: doc.id,
-                            ...data,
-                            type: 'subcontractor'
+                            ...data
                         });
                     }
                 });
@@ -338,8 +301,7 @@
                         cumBalance: parseFloat(data.cumBalance) || 0,
                         entityName: data.entityName || '',
                         transporterName: data.transporterName || '',
-                        ...data,
-                        type: data.type || 'transport'
+                        ...data
                     });
                 });
 
@@ -361,9 +323,7 @@
         // Update stats cards with real data
         function updateStats() {
             if (filteredData.length > 0) {
-                // Count only actual trucks (exclude payments)
-                const truckCount = filteredData.filter(item => item.type !== 'payment').length;
-                document.getElementById('totalTrucks').textContent = truckCount;
+                document.getElementById('totalTrucks').textContent = filteredData.length;
                 
                 const totalVolume = filteredData.reduce((sum, item) => sum + (parseFloat(item.volProd) || 0), 0);
                 document.getElementById('totalVolume').textContent = `${totalVolume.toFixed(2)} L`;
@@ -465,14 +425,6 @@
             updateStats();
         }
 
-        // Add this helper function to format dates
-        function formatDate(dateString) {
-            if (!dateString) return '-';
-            const date = new Date(dateString);
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            return `${date.getDate()}-${months[date.getMonth()]}-${date.getFullYear()}`;
-        }
-
         // Modify the updateTables function to show different row styles for payments
         function updateTables() {
             if (!truckDetailsBody) return;
@@ -486,8 +438,7 @@
                 <tr class="hover:bg-gray-100 dark:hover:bg-gray-700 ${item.type === 'payment' ? 'bg-green-50 dark:bg-green-900' : ''}">
                     <td class="px-6 py-4 whitespace-nowrap">${item.index}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${item.entityName || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${item.prod || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${formatDate(item.loadingDate)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${item.loadingDate || '-'}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${item.volProd || 0}</td>
                     <td class="px-6 py-4 whitespace-nowrap ${item.type === 'payment' ? 'font-semibold text-green-600 dark:text-green-400' : ''}">${item.truckDetails || '-'}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
@@ -504,22 +455,6 @@
                     <td class="px-6 py-4 whitespace-nowrap">$${item.cumBalance || 0}</td>
                 </tr>
             `).join('');
-        }
-
-        // Also update the Excel export to use the same date format
-        function formatDataForExcel(data) {
-            return data.map((item, index) => ({
-                'INDEX': index + 1,
-                'Loading Date': formatDate(item.loadingDate),
-                'Vol': item.volProd || 0,
-                'Prod': item.entityName || '-',
-                'Truck Details': item.truckDetails || '-',
-                'Status': item.status || '-',
-                'depot': item.depot || '-',
-                'payble': item.payable || 0,
-                'Payment': item.payment || 0,
-                'Cum Balance': item.cumBalance || 0
-            }));
         }
 
         function updateCharts() {
@@ -622,9 +557,7 @@
         function formatDataForExcel(data) {
             return data.map((item, index) => ({
                 'INDEX': index + 1,
-                'Loading Date': formatDate(item.loadingDate),
-                'Entity': item.entityName || '-',
-                'Product': item.prod || '-',
+                'Loading Date': item.loadingDate || '-',
                 'Vol': item.volProd || 0,
                 'Prod': item.entityName || '-',
                 'Truck Details': item.truckDetails || '-',
@@ -976,113 +909,6 @@
             });
         }
         
-        // Update the populateEntitySelect function
-        function populateEntitySelect(entities) {
-            if (!entitySelect) return;
-            console.log('Populating entities:', entities); // Debug
-            
-            entitySelect.innerHTML = '<option value="">All Entities</option>';
-            const uniqueEntities = [...new Set(entities)].filter(Boolean).sort();
-            
-            uniqueEntities.forEach(entity => {
-                const option = document.createElement('option');
-                option.value = entity;
-                option.textContent = entity;
-                entitySelect.appendChild(option);
-            });
-        }
-
-        // Update handleEntityChange function
-        function handleEntityChange() {
-            if (!transporterSelect || !entitySelect) return;
-            
-            const selectedEntity = entitySelect.value;
-            console.log('Selected entity:', selectedEntity); // Debug
-            
-            // Reset transporter dropdown
-            transporterSelect.innerHTML = '<option value="">All Transporters</option>';
-            
-            // Get unique transporters for the selected entity
-            const transporters = [...new Set(
-                originalData
-                    .filter(item => !selectedEntity || item.entityName === selectedEntity)
-                    .filter(item => item.transporterName)
-                    .map(item => item.transporterName)
-            )].sort();
-
-            console.log('Available transporters:', transporters); // Debug
-
-            transporters.forEach(transporter => {
-                const option = document.createElement('option');
-                option.value = transporter;
-                option.textContent = transporter;
-                transporterSelect.appendChild(option);
-            });
-
-            updateFilteredData();
-        }
-
-        // Update initFirebaseListeners function
-        function initFirebaseListeners(user) {
-            if (!firebase.firestore) {
-                console.error('Firestore is not initialized');
-                return;
-            }
-
-            const db = firebase.firestore();
-            console.log("User ID:", user.uid);
-
-            // First get all subcontractors to populate entities
-            db.collection('users').doc(user.uid).collection('subcontractors')
-                .get()
-                .then(snapshot => {
-                    const entities = [...new Set(snapshot.docs
-                        .map(doc => doc.data().entityName)
-                        .filter(Boolean)
-                    )];
-                    populateEntitySelect(entities);
-                });
-
-            // Then get all transport data
-            Promise.all([
-                db.collection('users').doc(user.uid).collection('subcontractors').get(),
-                db.collection('users').doc(user.uid).collection('transports').get()
-            ]).then(([subcontractorsSnapshot, transportsSnapshot]) => {
-                originalData = [];
-                
-                // Process subcontractors and transports
-                subcontractorsSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.entityName) {
-                        originalData.push({
-                            id: doc.id,
-                            ...data,
-                            type: 'subcontractor'
-                        });
-                    }
-                });
-
-                transportsSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.entityName) {
-                        originalData.push({
-                            id: doc.id,
-                            ...data,
-                            type: data.type || 'transport'
-                        });
-                    }
-                });
-
-                // Initialize filtered data
-                filteredData = [...originalData];
-                
-                // Update UI
-                updateTables();
-                updateCharts();
-                updateStats();
-            });
-        }
-        
     </script>
 </head>
 <body class="bg-custom-light dark:bg-custom-dark text-gray-800 dark:text-gray-200 min-h-screen flex flex-col">
@@ -1090,163 +916,65 @@
 
     <!-- Header -->
     <header class="glass-header fixed w-full top-0 z-50">
-        <!-- Update header content to match dashboard.html -->
         <div class="container mx-auto px-4 py-2 flex justify-between items-center">
             <div class="flex items-center">
                 <img src="logo.jpg" alt="Sarura Petroleum Logo" class="h-8 w-8 mr-2 rounded-full border-2 border-custom-accent animate-pulse-slow">
                 <h1 class="text-xl font-bold green-gradient">SARURA PETROLEUM</h1>
             </div>
             <div class="flex items-center space-x-4">
-                <a href="subcontractorform.html" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
-                    <i class="fas fa-plus"></i>
-                </a>
                 <button id="toggle-theme" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
                     <i class="fas fa-adjust"></i>
                 </button>
-                <a href="dashboard.html" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
-                    <i class="fas fa-home"></i>
-                </a>
+                <button onclick="window.location.href='subcontractors.html'" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
             </div>
         </div>
     </header>
 
     <main class="flex-grow container mx-auto px-4 py-8 relative z-10 pt-20">
-        <h2 class="text-3xl font-bold text-center green-gradient page-title">Subcontractors</h2>
-        <!-- Filters Section -->
-        <section class="mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="glass-effect rounded-lg p-6">
-                    <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
-                        <i class="fas fa-building mr-2 text-custom-accent"></i>Entity
-                    </label>
-                    <select id="entity" class="form-input w-full">
-                        <option value="">Select Entity</option>
-                    </select>
-                </div>
-                <div class="glass-effect rounded-lg p-6">
-                    <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
-                        <i class="fas fa-truck mr-2 text-custom-accent"></i>Transporter
-                    </label>
-                    <select id="transporter" class="form-input w-full">
-                        <option value="">All Transporters</option>
-                    </select>
-                </div>
-                <div class="glass-effect rounded-lg p-6">
-                    <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
-                        <i class="fas fa-money-check-alt mr-2 text-custom-accent"></i>Payment Status
-                    </label>
-                    <select id="paymentStatus" class="form-input w-full">
-                        <option value="">All Status</option>
-                        <option value="paid">Paid</option>
-                        <option value="unpaid">Unpaid</option>
-                        <option value="partial">Partial</option>
-                    </select>
-                </div>
+        <div class="max-w-md mx-auto glass-effect rounded-lg p-6">
+            <h2 class="text-2xl font-bold text-center green-gradient mb-6">Add Entity Payment</h2>
+            
+            <!-- Entity Selection -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Select Entity</label>
+                <select id="entitySelect" class="w-full rounded border p-2 dark:bg-gray-700 dark:border-gray-600" required>
+                    <option value="">Select Entity</option>
+                </select>
             </div>
-        </section>
 
-        <!-- Stats Cards -->
-        <section class="mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div class="glass-effect rounded-lg p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Total Trucks</p>
-                            <h3 class="text-2xl font-bold text-custom-accent" id="totalTrucks">0</h3>
-                        </div>
-                        <i class="fas fa-truck text-3xl text-custom-accent opacity-20"></i>
-                    </div>
+            <!-- Payment Form -->
+            <form id="paymentForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Payment Amount</label>
+                    <input type="number" 
+                           id="paymentAmount" 
+                           class="w-full rounded border p-2 dark:bg-gray-700 dark:border-gray-600" 
+                           required 
+                           step="0.01" 
+                           min="0">
                 </div>
-                <div class="glass-effect rounded-lg p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Total Volume</p>
-                            <h3 class="text-2xl font-bold text-custom-accent" id="totalVolume">0 L</h3>
-                        </div>
-                        <i class="fas fa-gas-pump text-3xl text-custom-accent opacity-20"></i>
-                    </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Payment Date</label>
+                    <input type="date" 
+                           id="paymentDate" 
+                           class="w-full rounded border p-2 dark:bg-gray-700 dark:border-gray-600" 
+                           required>
                 </div>
-                <div class="glass-effect rounded-lg p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Total Paid</p>
-                            <h3 class="text-2xl font-bold text-custom-accent" id="totalPaid">$0</h3>
-                        </div>
-                        <i class="fas fa-dollar-sign text-3xl text-custom-accent opacity-20"></i>
-                    </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Reference/Notes</label>
+                    <textarea id="paymentNotes" 
+                              class="w-full rounded border p-2 dark:bg-gray-700 dark:border-gray-600" 
+                              rows="3"></textarea>
                 </div>
-                <div class="glass-effect rounded-lg p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Outstanding</p>
-                            <h3 class="text-2xl font-bold text-custom-accent" id="totalOutstanding">$0</h3>
-                        </div>
-                        <i class="fas fa-balance-scale text-3xl text-custom-accent opacity-20"></i>
-                    </div>
+                <div class="flex justify-end space-x-2 mt-6">
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save mr-2"></i>Save Payment
+                    </button>
                 </div>
-            </div>
-        </section>
-
-        <!-- Charts Section -->
-        <section class="mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="glass-effect rounded-lg p-6">
-                    <h3 class="text-lg font-semibold mb-4">Volume Analysis</h3>
-                    <div class="h-80">
-                        <canvas id="volumeChart"></canvas>
-                    </div>
-                </div>
-                <div class="glass-effect rounded-lg p-6">
-                    <h3 class="text-lg font-semibold mb-4">Payment Status</h3>
-                    <div class="h-80">
-                        <canvas id="paymentChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Data Tables -->
-        <section class="mb-8">
-            <div class="glass-effect rounded-lg p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold">Transport Records</h3>
-                    <div class="flex gap-4">
-                        <button id="downloadExcel" class="btn-primary">
-                            <i class="fas fa-download mr-2"></i>Export
-                        </button>
-                        <label class="btn-secondary cursor-pointer">
-                            <i class="fas fa-upload mr-2"></i>Import
-                            <input type="file" id="uploadExcel" class="hidden" accept=".xlsx,.xls">
-                        </label>
-                        <button onclick="window.location.href='entitypayment.html'" class="btn-primary">
-                            <i class="fas fa-plus mr-2"></i>Add Payment
-                        </button>
-                    </div>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-700">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">#</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Entity</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Product</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Loading Date</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Volume</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Truck Details</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Depot</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Payable</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Payment</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Balance</th>
-                            </tr>
-                        </thead>
-                        <tbody id="truckDetailsBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            <!-- Truck details will be inserted here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
+            </form>
+        </div>
     </main>
 
     <!-- Footer -->
@@ -1256,35 +984,79 @@
         </div>
     </footer>
 
-    <!-- Add payment modal HTML after the main table -->
-    <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full glass-effect">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Entity Payment</h3>
-                    <button id="cancelPayment" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <form id="paymentForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Payment Amount</label>
-                        <input type="number" 
-                               id="paymentAmount" 
-                               class="w-full rounded border p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
-                               required 
-                               step="0.01" 
-                               min="0">
-                    </div>
-                    <div class="flex justify-end space-x-2 mt-4">
-                        <button type="submit" class="btn-primary">
-                            <i class="fas fa-save mr-2"></i>Save Payment
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    <script>
+        // Initialize Firebase and load entities
+        document.addEventListener('DOMContentLoaded', () => {
+            firebase.auth().onAuthStateChanged(user => {
+                if (!user) {
+                    window.location.href = 'index.html';
+                } else {
+                    loadEntities(user);
+                    setupFormHandler(user);
+                }
+            });
+        });
 
+        function loadEntities(user) {
+            const entitySelect = document.getElementById('entitySelect');
+            const db = firebase.firestore();
+            
+            db.collection('users').doc(user.uid).collection('subcontractors')
+                .get()
+                .then(snapshot => {
+                    const entities = [...new Set(snapshot.docs.map(doc => doc.data().entityName))];
+                    entities.forEach(entity => {
+                        if (entity) {
+                            const option = document.createElement('option');
+                            option.value = entity;
+                            option.textContent = entity;
+                            entitySelect.appendChild(option);
+                        }
+                    });
+                });
+        }
+
+        function setupFormHandler(user) {
+            const form = document.getElementById('paymentForm');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const entityName = document.getElementById('entitySelect').value;
+                if (!entityName) {
+                    alert('Please select an entity');
+                    return;
+                }
+
+                const paymentData = {
+                    entityName,
+                    loadingDate: document.getElementById('paymentDate').value,
+                    truckDetails: 'Payment',
+                    status: 'completed',
+                    depot: '-',
+                    volProd: 0,
+                    payable: parseFloat(document.getElementById('paymentAmount').value),
+                    payment: parseFloat(document.getElementById('paymentAmount').value),
+                    cumBalance: 0,
+                    type: 'payment',
+                    notes: document.getElementById('paymentNotes').value,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                try {
+                    await firebase.firestore()
+                        .collection('users')
+                        .doc(user.uid)
+                        .collection('transports')
+                        .add(paymentData);
+
+                    alert('Payment added successfully!');
+                    window.location.href = 'subcontractors.html';
+                } catch (error) {
+                    console.error('Error adding payment:', error);
+                    alert('Error adding payment');
+                }
+            });
+        }
+    </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Sarura Petroleum</title>
+    <title>Documents - Sarura Petroleum</title>
     <link rel="icon" href="logo.jpg" type="image/jpg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -101,7 +101,7 @@
         }
     </style>
 </head>
-<body class="bg-custom-light dark:bg-custom-dark text-gray-800 dark:text-gray-200 min-h-screen flex flex-col transition-colors duration-300">
+<body class="bg-custom-light dark:bg-custom-dark text-gray-800 dark:text-gray-200 min-h-screen flex flex-col">
     <div id="particles-js" class="fixed inset-0 z-0 pointer-events-none"></div>
 
     <!-- Header -->
@@ -115,99 +115,44 @@
                 <button id="toggle-theme" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
                     <i class="fas fa-adjust"></i>
                 </button>
-                <button id="logoutButton" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
+                <a href="dashboard.html" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
+                    <i class="fas fa-home"></i>
+                </a>
             </div>
         </div>
     </header>
 
     <!-- Main Content -->
     <main class="flex-grow container mx-auto px-4 py-8 relative z-10 content-behind pt-20">
-        <h2 class="text-3xl font-bold text-center green-gradient page-title">Welcome to Sarura Petroleum</h2>
+        <h2 class="text-3xl font-bold text-center green-gradient page-title">Documents</h2>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Procurement -->
-            <a href="procurement.html" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 float">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <!-- PFI Card -->
+            <a href="pfi.html" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 float">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-xl font-semibold">Procurement & Sales</h3>
-                    <i class="fas fa-shopping-cart text-3xl text-custom-accent"></i>
+                    <h3 class="text-xl font-semibold">Proforma Invoice</h3>
+                    <i class="fas fa-file-invoice-dollar text-3xl text-custom-accent"></i>
                 </div>
-                <p class="text-gray-600 dark:text-gray-400">Manage purchase orders and suppliers</p>
+                <p class="text-gray-600 dark:text-gray-400">Generate and manage PFIs</p>
             </a>
 
-            <!-- Logistics -->
-            <a href="logistics.html" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 float">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-xl font-semibold">Logistics</h3>
-                    <i class="fas fa-truck text-3xl text-custom-accent"></i>
-                </div>
-                <p class="text-gray-600 dark:text-gray-400">Track fleet and deliveries</p>
-            </a>
+                        <!-- Delivery Notes Card -->
+                        <a href="delivery.html" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 float">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-semibold">Delivery Notes</h3>
+                                <i class="fas fa-truck-loading text-3xl text-custom-accent"></i>
+                            </div>
+                            <p class="text-gray-600 dark:text-gray-400">Manage delivery documentation</p>
+                        </a>
 
-            <!-- Sales -->
-            <a href="transport.html" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 float">
+            <!-- Invoice Card -->
+            <a href="invoice.html" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 float">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-xl font-semibold">Transport</h3>
-                    <i class="fas fa-chart-line text-3xl text-custom-accent"></i>
+                    <h3 class="text-xl font-semibold">Invoice</h3>
+                    <i class="fas fa-file-invoice text-3xl text-custom-accent"></i>
                 </div>
-                <p class="text-gray-600 dark:text-gray-400">Sarura Hired Trucks</p>
+                <p class="text-gray-600 dark:text-gray-400">Create and manage invoices</p>
             </a>
-
-            <!-- Replace the Inventory card with this -->
-            <a href="subcontractors.html" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 float">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-xl font-semibold">Subcontractors</h3>
-                    <i class="fas fa-users text-3xl text-custom-accent"></i>
-                </div>
-                <p class="text-gray-600 dark:text-gray-400">Manage subcontractors and payments</p>
-            </a>
-
-            <!-- Reports -->
-            <a href="reports.html" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 float">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-xl font-semibold">Reports</h3>
-                    <i class="fas fa-file-alt text-3xl text-custom-accent"></i>
-                </div>
-                <p class="text-gray-600 dark:text-gray-400">View analytics and reports</p>
-            </a>
-
-            <!-- Replace Documents card with simpler version -->
-            <a href="documents.html" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 float">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-xl font-semibold">Documents</h3>
-                    <i class="fas fa-file-alt text-3xl text-custom-accent"></i>
-                </div>
-                <p class="text-gray-600 dark:text-gray-400">Manage PFI, Invoice and Delivery notes</p>
-            </a>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="quick-actions">
-            <button id="quick-actions-toggle" class="w-12 h-12 rounded-full bg-custom-accent hover:bg-custom-accent-hover text-white shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110">
-                <i class="fas fa-bolt"></i>
-            </button>
-            
-            <div id="quick-actions-menu" class="quick-actions-menu absolute bottom-full right-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 min-w-[200px]">
-                <div class="grid grid-cols-1 gap-2">
-                    <a href="Procurement.html" class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-300">
-                        <i class="fas fa-plus-circle w-6"></i>
-                        <span>New Order</span>
-                    </a>
-                    <a href="add-trucks.html" class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-300">
-                        <i class="fas fa-truck w-6"></i>
-                        <span>Add Truck</span>
-                    </a>
-                    <a href="add-reports.html" class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-300">
-                        <i class="fas fa-file-alt w-6"></i>
-                        <span>Add Report</span>
-                    </a>
-                    <a href="support.html" class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-300">
-                        <i class="fas fa-headset w-6"></i>
-                        <span>Get Support</span>
-                    </a>
-                </div>
-            </div>
         </div>
     </main>
 

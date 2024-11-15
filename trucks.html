@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truck Details - Sarura Petroleum</title>
+    <link rel="icon" href="logo.jpg" type="image/jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-dark': '#121212',
+                        'custom-light': '#f5f5f5',
+                        'custom-primary': '#4ade80',
+                        'custom-secondary': '#22c55e',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://kit.fontawesome.com/d00c9b568a.js" crossorigin="anonymous"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-firestore.js"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <style>
+        .float { animation: float 3s ease-in-out infinite; }
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+        .green-gradient {
+            background: linear-gradient(to right, #4ade80, #22c55e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-custom-light dark:bg-custom-dark text-gray-800 dark:text-gray-200 transition-colors duration-300">
+    <div id="particles-js"></div>
+
+    <!-- Glassy top bar -->
+    <header class="bg-white bg-opacity-10 dark:bg-black dark:bg-opacity-30 backdrop-filter backdrop-blur-lg sticky top-0 z-10 shadow-lg">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="logo.jpg" alt="Sarura Petroleum Logo" class="h-10 w-10 mr-2 rounded-full border-2 border-custom-primary animate-pulse-slow">
+                <h1 class="text-xl font-bold green-gradient">SARURA PETROLEUM</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="toggle-button" class="text-gray-800 dark:text-gray-200 hover:text-custom-primary transition-colors duration-300">
+                    <i class="fas fa-adjust"></i>
+                </button>
+                <button id="back-button" class="text-gray-800 dark:text-gray-200 hover:text-custom-primary transition-colors duration-300">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="container mx-auto px-4 py-8">
+        <h2 class="text-3xl font-bold mb-4 text-gray-800 dark:text-gray-200">Truck Details</h2>
+        
+        <!-- Search input -->
+        <div class="mb-4 relative">
+            <input type="text" id="searchBox" placeholder="Search by truck no..." class="w-full p-2 pl-10 rounded-lg bg-white bg-opacity-20 dark:bg-black dark:bg-opacity-20 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-custom-primary">
+            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+        </div>
+
+        <!-- Data cards container -->
+        <div id="data-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </main>
+
+    <!-- Arrow icon for scrolling to top -->
+    <button id="scroll-to-top" class="fixed bottom-4 right-4 bg-custom-primary text-white p-2 rounded-full shadow-lg hidden hover:bg-custom-secondary transition-colors duration-300">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- The Modal -->
+    <div id="myModal" class="fixed z-50 inset-0 overflow-y-auto hidden">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white dark:bg-custom-dark rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white dark:bg-custom-dark px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                            <h3 class="text-lg leading-6 font-medium text-gray-800 dark:text-gray-200" id="modal-title">
+                                Session Timeout
+                            </h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    Your session will end soon due to inactivity.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-800 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-custom-primary text-base font-medium text-white hover:bg-custom-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-custom-primary sm:ml-3 sm:w-auto sm:text-sm transition-colors duration-300">
+                        Stay Logged In
+                    </button>
+                    <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors duration-300">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // DOM elements
+        const dataCardsContainer = document.getElementById("data-cards-container");
+        const searchInput = document.getElementById("searchBox");
+        const toggleButton = document.getElementById("toggle-button");
+        const backButton = document.getElementById("back-button");
+        const scrollToTopButton = document.getElementById("scroll-to-top");
+        const modal = document.getElementById("myModal");
+
+        // Retrieve data from Firebase and create data cards
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                const userId = user.uid;
+                db.collection('users').doc(userId).collection('trucks').onSnapshot((snapshot) => {
+                    dataCardsContainer.innerHTML = '';
+                    snapshot.docs.forEach(doc => {
+                        const truckData = doc.data();
+                        createTruckCard(truckData, doc.id);
+                    });
+                });
+            }
+        });
+
+        function createTruckCard(truckData, docId) {
+            const dataCard = document.createElement("div");
+            dataCard.classList.add("bg-white", "dark:bg-gray-800", "bg-opacity-20", "dark:bg-opacity-30", "backdrop-filter", "backdrop-blur-lg", "rounded-lg", "p-4", "shadow-lg", "border", "border-gray-200", "dark:border-gray-700", "border-opacity-30", "transform", "transition", "duration-300", "hover:scale-105", "float");
+            dataCard.setAttribute("data-truck-no", truckData.truck_no);
+            dataCard.setAttribute("data-driver", truckData.driver);
+            dataCard.setAttribute("data-transporter", truckData.transporter);
+
+            const totalAgo = calculateTotal([truckData.ago_comp_1, truckData.ago_comp_2, truckData.ago_comp_3, truckData.ago_comp_4, truckData.ago_comp_5, truckData.ago_comp_6]);
+            const totalPms = calculateTotal([truckData.pms_1, truckData.pms_2, truckData.pms_3, truckData.pms_4, truckData.pms_5, truckData.pms_6]);
+
+            dataCard.innerHTML = `
+                <h2 class="text-xl font-bold mb-2 text-gray-800 dark:text-gray-200">${truckData.truck_no}</h2>
+                <p class="mb-1 text-sm"><span class="font-semibold">Driver:</span> ${truckData.driver}</p>
+                <p class="mb-1 text-sm"><span class="font-semibold">Transporter:</span> ${truckData.transporter}</p>
+                <p class="mb-1 text-sm"><span class="font-semibold">AGO Comp:</span> ${formatCompartments([truckData.ago_comp_1, truckData.ago_comp_2, truckData.ago_comp_3, truckData.ago_comp_4, truckData.ago_comp_5, truckData.ago_comp_6])} (Total: ${totalAgo})</p>
+                <p class="mb-3 text-sm"><span class="font-semibold">PMS:</span> ${formatCompartments([truckData.pms_1, truckData.pms_2, truckData.pms_3, truckData.pms_4, truckData.pms_5, truckData.pms_6])} (Total: ${totalPms})</p>
+                <div class="flex justify-end space-x-2">
+                    <button class="copy-btn p-1.5 rounded-lg bg-custom-primary text-white hover:bg-custom-secondary transition-colors duration-300">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button class="edit-btn p-1.5 rounded-lg bg-gray-500 text-white hover:bg-gray-600 transition-colors duration-300">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="delete-btn p-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors duration-300">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+
+            const copyButton = dataCard.querySelector('.copy-btn');
+            const editButton = dataCard.querySelector('.edit-btn');
+            const deleteButton = dataCard.querySelector('.delete-btn');
+
+            copyButton.addEventListener('click', () => copyTruckDetails(truckData, totalAgo, totalPms));
+            editButton.addEventListener('click', () => editTruck(docId));
+            deleteButton.addEventListener('click', () => deleteTruck(docId));
+
+            dataCardsContainer.appendChild(dataCard);
+        }
+
+        function calculateTotal(values) {
+            return values.reduce((total, value) => total + (Number(value) || 0), 0);
+        }
+
+        function formatCompartments(compartments) {
+            return compartments.filter(comp => comp !== undefined && comp !== null && comp !== '').join(', ');
+        }
+
+        async function copyTruckDetails(truckData, totalAgo, totalPms) {
+            const dataToCopy = `Truck No: ${truckData.truck_no}\nDriver: ${truckData.driver}\nTransporter: ${truckData.transporter}\nAGO Comps: ${formatCompartments([truckData.ago_comp_1, truckData.ago_comp_2, truckData.ago_comp_3, truckData.ago_comp_4, truckData.ago_comp_5, truckData.ago_comp_6])} (Total: ${totalAgo})\nPMS: ${formatCompartments([truckData.pms_1, truckData.pms_2, truckData.pms_3, truckData.pms_4, truckData.pms_5, truckData.pms_6])} (Total: ${totalPms})`;
+
+            try {
+                await navigator.clipboard.writeText(dataToCopy);
+                alert('Truck details copied to clipboard!');
+            } catch (err) {
+                console.error("Failed to copy: ", err);
+                alert("Failed to copy truck details to clipboard.");
+            }
+        }
+
+        async function editTruck(docId) {
+            const user = await auth.currentUser;
+            if (user) {
+                db.collection('users').doc(user.uid).get()
+                    .then(userDoc => {
+                        if (userDoc.exists) {
+                            const workId = userDoc.data().workId;
+                            let enteredWorkId = prompt("Enter your work ID to edit a truck:");
+                            if (workId === enteredWorkId) {
+                                window.location.href = `edittruck.html?id=${docId}`;
+                            } else {
+                                alert("Incorrect work ID.");
+                            }
+                        } else {
+                            console.error("User document not found.");
+                            alert("User document not found.");
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error getting user document:", error);
+                        alert("Error getting user document.");
+                    });
+            } else {
+                alert("You need to be logged in to edit a truck.");
+            }
+        }
+
+        async function deleteTruck(docId) {
+            const user = await auth.currentUser;
+            if (user) {
+                db.collection('users').doc(user.uid).get()
+                    .then(userDoc => {
+                        if (userDoc.exists) {
+                            const workId = userDoc.data().workId;
+                            let enteredWorkId = prompt("Enter your work ID to delete a truck:");
+                            if (workId === enteredWorkId) {
+                                db.collection('users').doc(user.uid).collection('trucks').doc(docId).delete()
+                                    .then(() => {
+                                        alert("Truck deleted successfully.");
+                                    })
+                                    .catch((error) => {
+                                        console.error("Error deleting truck:", error);
+                                        alert("Error deleting truck.");
+                                    });
+                            } else {
+                                alert("Incorrect work ID.");
+                            }
+                        } else {
+                            console.error("User document not found.");
+                            alert("User document not found.");
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error getting user document:", error);
+                        alert("Error getting user document.");
+                    });
+            } else {
+                alert("You need to be logged in to delete a truck.");
+            }
+        }
+
+        // Search functionality
+        searchInput.addEventListener("keyup", () => {
+            const searchValue = searchInput.value.toLowerCase();
+            const dataCards = dataCardsContainer.getElementsByTagName("div");
+            Array.from(dataCards).forEach(card => {
+                const truckNo = card.getAttribute("data-truck-no").toLowerCase();
+                card.style.display = truckNo.includes(searchValue) ? "" : "none";
+            });
+        });
+
+        // Toggle theme
+        toggleButton.addEventListener("click", () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Back button
+        backButton.addEventListener("click", () => {
+            window.location.href = "dashboard.html";
+        });
+
+        // Scroll to top button
+        window.addEventListener("scroll", () => {
+            scrollToTopButton.classList.toggle("hidden", window.scrollY < 100);
+        });
+
+        scrollToTopButton.addEventListener("click", () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // Particle.js configuration
+        particlesJS("particles-js", {
+            particles: {
+                number: { value: 80, density: { enable: true, value_area: 800 } },
+                color: { value: "#4ade80" },
+                shape: { type: "circle" },
+                opacity: { value: 0.5, random: false, anim: { enable: false } },
+                size: { value: 3, random: true, anim: { enable: false } },
+                line_linked: { enable: true, distance: 150, color: "#4ade80", opacity: 0.4, width: 1 },
+                move: { enable: true, speed: 2, direction: "none", random: false, straight: false, out_mode: "out", bounce: false }
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: { onhover: { enable: true, mode: "repulse" }, onclick: { enable: true, mode: "push" }, resize: true },
+                modes: { repulse: { distance: 100, duration: 0.4 }, push: { particles_nb: 4 } }
+            },
+            retina_detect: true
+        });
+
+        // Set theme on load
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+        });
+    </script>
+</body>
+</html>

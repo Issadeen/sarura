@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Allow access to transports under the user's collection
+      match /transports/{transportId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Truck management
+      match /trucks/{truckId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Transport records
+      match /transports/{transportId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && (
+          request.resource.data.userEmail == request.auth.token.email ||
+          resource.data.userEmail == request.auth.token.email
+        );
+      }
+
+      // Reports collections
+      match /userReports/{reportId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /reports/{reportId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Orders collections
+      match /orders/{orderId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /porders/{orderId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Subcontractors collection
+      match /subcontractors/{subcontractorId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // PFI (Proforma Invoice) collection
+      match /proformaInvoices/{pfiId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Add Delivery Notes collection
+      match /deliveryNotes/{deliveryId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Invoices collection
+      match /invoices/{invoiceId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Restrict access to root-level 'transports' collection
+    match /transports/{transportId} {
+      allow read, write: if false;
+    }
+
+    // Add root-level PFI collection security
+    match /proformaInvoices/{pfiId} {
+      allow read, write: if false;
+    }
+  }
+}
