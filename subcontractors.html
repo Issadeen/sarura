@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subcontractors - Sarura Petroleum</title>
+    <link rel="icon" href="logo.jpg" type="image/jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://kit.fontawesome.com/d00c9b568a.js" crossorigin="anonymous"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        .dark .glass {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        .green-gradient {
+            background: linear-gradient(to right, #4ade80, #22c55e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .float { animation: float 3s ease-in-out infinite; }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .dark .glass-effect {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glass-header, .glass-footer {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .dark .glass-header, .dark .glass-footer {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Light theme neumorphic effect */
+        html:not(.dark) .glass-effect {
+            background: #f0f0f0;
+            box-shadow: 
+                8px 8px 16px #d1d1d1,
+                -8px -8px 16px #ffffff;
+            border: none;
+        }
+
+        /* Dark theme glass effect */
+        .dark .glass-effect {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: none;
+        }
+
+        /* Add styles for input and select in dark mode */
+        .dark input,
+        .dark select {
+            background-color: #000; /* Black background */
+            color: #fff; /* White text */
+            border-color: #444; /* Darker border */
+        }
+
+        /* Optional: Adjust placeholder color in dark mode */
+        .dark input::placeholder,
+        .dark select::placeholder {
+            color: #bbb;
+        }
+
+        /* Add these modal styles */
+        .modal-backdrop {
+            background: rgba(0, 0, 0, 0.7);
+            transition: all 0.3s ease;
+        }
+        
+        .modal-content {
+            transform: scale(0.95);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .modal.active {
+            display: flex !important;
+        }
+        
+        .modal.active .modal-content {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        /* Update button styles */
+        .btn-primary {
+            @apply px-4 py-2 bg-custom-accent text-white rounded hover:bg-custom-accent-hover transition-colors duration-300;
+        }
+        .btn-secondary {
+            @apply px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: {
+                            DEFAULT: "hsl(var(--primary))",
+                            foreground: "hsl(var(--primary-foreground))",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(var(--secondary))",
+                            foreground: "hsl(var(--secondary-foreground))",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(var(--destructive))",
+                            foreground: "hsl(var(--destructive-foreground))",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(var(--muted))",
+                            foreground: "hsl(var(--muted-foreground))",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(var(--accent))",
+                            foreground: "hsl(var(--accent-foreground))",
+                        },
+                        popover: {
+                            DEFAULT: "hsl(var(--popover))",
+                            foreground: "hsl(var(--popover-foreground))",
+                        },
+                        card: {
+                            DEFAULT: "hsl(var(--card))",
+                            foreground: "hsl(var(--card-foreground))",
+                        },
+                        'custom-light': '#f5f5f5',
+                        'custom-dark': '#121212',
+                        'custom-accent': '#4ade80',
+                        'custom-accent-hover': '#22c55e',
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)",
+                    },
+                },
+            },
+        }
+    </script>
+    <script>
+        // Declare global variables at the top level
+        let filteredData = [];
+        let volumeChart, paymentChart;
+        let entitySelect, transporterSelect, truckDetailsBody, paymentInfoBody, 
+            toggleThemeButton, downloadExcelBtn, uploadExcelInput;
+        let originalData = [];
+
+        // Wait for DOM to be ready before initializing anything
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize particles.js only after DOM is ready
+            if (document.getElementById('particles-js')) {
+                particlesJS("particles-js", {
+                    particles: {
+                        number: { value: 80, density: { enable: true, value_area: 800 } },
+                        color: { value: "#4ade80" },
+                        shape: { type: "circle" },
+                        opacity: { value: 0.5, random: false, anim: { enable: false } },
+                        size: { value: 3, random: true, anim: { enable: false } },
+                        line_linked: { enable: true, distance: 150, color: "#4ade80", opacity: 0.4, width: 1 },
+                        move: { enable: true, speed: 2, direction: "none", random: false, straight: false, out_mode: "out", bounce: false }
+                    },
+                    interactivity: {
+                        detect_on: "canvas",
+                        events: { onhover: { enable: true, mode: "repulse" }, onclick: { enable: true, mode: "push" }, resize: true },
+                        modes: { repulse: { distance: 100, duration: 0.4 }, push: { particles_nb: 4 } }
+                    },
+                    retina_detect: true
+                });
+            }
+
+            // Set initial theme
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+
+            // Set up theme toggle
+            const toggleThemeBtn = document.getElementById('toggle-theme');
+            if (toggleThemeBtn) {
+                toggleThemeBtn.addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark');
+                    localStorage.setItem('theme', 
+                        document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+                    );
+                    updateCharts();
+                });
+            }
+
+            // Initialize Firebase auth listener
+            firebase.auth().onAuthStateChanged(user => {
+                if (!user) {
+                    window.location.href = 'index.html';
+                } else {
+                    setupEventListeners();
+                    initFirebaseListeners(user);
+                    setupRealtimeListeners(user); // Add real-time updates
+                }
+            });
+        });
+
+        function setupEventListeners() {
+            // Get DOM elements after ensuring DOM is loaded
+            entitySelect = document.getElementById('entity');
+            transporterSelect = document.getElementById('transporter');
+            truckDetailsBody = document.getElementById('truckDetailsBody');
+            paymentInfoBody = document.getElementById('paymentInfoBody');
+            downloadExcelBtn = document.getElementById('downloadExcel');
+            uploadExcelInput = document.getElementById('uploadExcel');
+
+            // Add event listeners with null checks
+            if (entitySelect) entitySelect.addEventListener('change', handleEntityChange);
+            if (transporterSelect) transporterSelect.addEventListener('change', handleTransporterChange);
+            if (downloadExcelBtn) downloadExcelBtn.addEventListener('click', downloadExcel);
+            if (uploadExcelInput) uploadExcelInput.addEventListener('change', handleFileUpload);
+
+            // Add these styles to all select elements
+            const selects = document.querySelectorAll('select');
+            selects.forEach(select => {
+                select.classList.add('form-select', 'w-full', 'rounded', 'border', 'p-2', 
+                    'dark:bg-gray-800', 'dark:border-gray-600', 'dark:text-gray-200',
+                    'focus:outline-none', 'focus:ring-2', 'focus:ring-custom-accent',
+                    'hover:border-gray-400', 'dark:hover:border-gray-500');
+            });
+
+            // Add these debug logs
+            if (entitySelect) {
+                console.log('Entity select found:', entitySelect);
+                entitySelect.addEventListener('change', (e) => {
+                    console.log('Entity changed to:', e.target.value);
+                    handleEntityChange();
+                });
+            }
+
+            if (transporterSelect) {
+                console.log('Transporter select found:', transporterSelect);
+                transporterSelect.addEventListener('change', (e) => {
+                    console.log('Transporter changed to:', e.target.value);
+                    handleTransporterChange();
+                });
+            }
+        }
+
+        // Initialize Firebase listeners
+        function initFirebaseListeners(user) {
+            if (!firebase.firestore) {
+                console.error('Firestore is not initialized');
+                return;
+            }
+
+            const db = firebase.firestore();
+            console.log("User ID:", user.uid); // Debug user ID
+
+            // First get all subcontractors to populate entities
+            db.collection('users').doc(user.uid).collection('subcontractors')
+                .get()
+                .then(snapshot => {
+                    const entities = [...new Set(snapshot.docs
+                        .map(doc => doc.data().entityName)
+                        .filter(Boolean)
+                    )];
+                    populateEntitySelect(entities);
+                });
+
+            // Then get all transport data
+            Promise.all([
+                db.collection('users').doc(user.uid).collection('subcontractors').get(),
+                db.collection('users').doc(user.uid).collection('transports').get()
+            ]).then(([subcontractorsSnapshot, transportsSnapshot]) => {
+                originalData = []; // Reset original data
+                
+                // Process subcontractors
+                subcontractorsSnapshot.forEach(doc => {
+                    console.log("Subcontractor data:", doc.data()); // Debug data
+                    const data = doc.data();
+                    if (data.entityName && data.transporterName) {
+                        originalData.push({
+                            id: doc.id,
+                            ...data,
+                            type: 'subcontractor'
+                        });
+                    }
+                });
+
+                // Process transports
+                transportsSnapshot.forEach(doc => {
+                    console.log("Transport data:", doc.data()); // Debug data
+                    const data = doc.data();
+                    originalData.push({
+                        id: doc.id,
+                        truckDetails: data.truckDetails || '',
+                        volProd: parseFloat(data.volProd) || 0,
+                        status: data.status || '',
+                        payment: parseFloat(data.payment) || 0,
+                        payable: parseFloat(data.payable) || 0,
+                        cumBalance: parseFloat(data.cumBalance) || 0,
+                        entityName: data.entityName || '',
+                        transporterName: data.transporterName || '',
+                        ...data,
+                        type: data.type || 'transport'
+                    });
+                });
+
+                // Initialize filtered data with all data
+                filteredData = [...originalData];
+                
+                console.log("Filtered Data:", filteredData); // Debug final data
+
+                // Update everything
+                updateTables();
+                updateCharts();
+                updateStats();
+                populateEntitySelect([...new Set(originalData.map(item => item.entityName))]);
+            }).catch(error => {
+                console.error("Error fetching data:", error);
+            });
+        }
+
+        // Update stats cards with real data
+        function updateStats() {
+            if (filteredData.length > 0) {
+                // Count only actual trucks (exclude payments)
+                const truckCount = filteredData.filter(item => item.type !== 'payment').length;
+                document.getElementById('totalTrucks').textContent = truckCount;
+                
+                const totalVolume = filteredData.reduce((sum, item) => sum + (parseFloat(item.volProd) || 0), 0);
+                document.getElementById('totalVolume').textContent = `${totalVolume.toFixed(2)} L`;
+                
+                const totalPaid = filteredData.reduce((sum, item) => sum + (parseFloat(item.payment) || 0), 0);
+                document.getElementById('totalPaid').textContent = `$${totalPaid.toFixed(2)}`;
+                
+                const totalOutstanding = filteredData.reduce((sum, item) => sum + (parseFloat(item.cumBalance) || 0), 0);
+                document.getElementById('totalOutstanding').textContent = `$${totalOutstanding.toFixed(2)}`;
+            }
+        }
+
+        // Particle.js configuration
+        particlesJS("particles-js", {
+            particles: {
+                number: { value: 80, density: { enable: true, value_area: 800 } },
+                color: { value: "#4ade80" },
+                shape: { type: "circle" },
+                opacity: { value: 0.5, random: false, anim: { enable: false } },
+                size: { value: 3, random: true, anim: { enable: false } },
+                line_linked: { enable: true, distance: 150, color: "#4ade80", opacity: 0.4, width: 1 },
+                move: { enable: true, speed: 2, direction: "none", random: false, straight: false, out_mode: "out", bounce: false }
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: { onhover: { enable: true, mode: "repulse" }, onclick: { enable: true, mode: "push" }, resize: true },
+                modes: { repulse: { distance: 100, duration: 0.4 }, push: { particles_nb: 4 } }
+            },
+            retina_detect: true
+        });
+
+        // Move DOM element selections inside DOMContentLoaded or after elements exist
+        function handleEntityChange() {
+            if (!transporterSelect || !entitySelect) return;
+    
+            const selectedEntity = entitySelect.value;
+            transporterSelect.innerHTML = '<option value="">All Transporters</option>';
+            
+            if (selectedEntity) {
+                // Filter transporters based on selected entity
+                const transporters = [...new Set(
+                    filteredData
+                        .filter(item => item.entityName === selectedEntity)
+                        .map(item => item.transporterName)
+                )];
+
+                // Add transporters to dropdown
+                transporters.forEach(transporter => {
+                    if (transporter) { // Only add if transporter exists
+                        const option = document.createElement('option');
+                        option.value = transporter;
+                        option.textContent = transporter;
+                        transporterSelect.appendChild(option);
+                    }
+                });
+            }
+
+            // Update filtered data based on selection
+            updateFilteredData();
+        }
+
+        function handleTransporterChange() {
+            updateFilteredData();
+        }
+
+        function updateFilteredData() {
+            const selectedEntity = entitySelect?.value;
+            const selectedTransporter = transporterSelect?.value;
+            const selectedStatus = document.getElementById('paymentStatus')?.value;
+
+            // Start with the original data from Firebase
+            let newFilteredData = [...originalData || []]; // Keep a copy of original data
+
+            // Only filter by entity if a specific entity is selected (not empty or "All Entities")
+            if (selectedEntity && selectedEntity !== "") {
+                newFilteredData = newFilteredData.filter(item => item.entityName === selectedEntity);
+            }
+
+            // Only filter by transporter if one is selected
+            if (selectedTransporter && selectedTransporter !== "") {
+                newFilteredData = newFilteredData.filter(item => item.transporterName === selectedTransporter);
+            }
+
+            // Filter by payment status if selected
+            if (selectedStatus && selectedStatus !== "") {
+                newFilteredData = newFilteredData.filter(item => {
+                    if (selectedStatus === 'paid') return item.cumBalance === 0;
+                    if (selectedStatus === 'unpaid') return item.payment === 0;
+                    if (selectedStatus === 'partial') return item.payment > 0 && item.cumBalance > 0;
+                    return true;
+                });
+            }
+
+            // Update the filtered data and refresh the UI
+            filteredData = newFilteredData;
+            console.log("Filtered data:", filteredData); // Debug
+            updateTables();
+            updateCharts();
+            updateStats();
+        }
+
+        // Add this helper function to format dates
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${date.getDate()}-${months[date.getMonth()]}-${date.getFullYear()}`;
+        }
+
+        // Modify the updateTables function to show different row styles for payments
+        function updateTables() {
+            if (!truckDetailsBody) return;
+            
+            console.log("Updating tables with data:", filteredData); // Debug
+
+            // Add index to the data
+            const indexedData = filteredData.map((item, index) => ({...item, index: index + 1}));
+
+            truckDetailsBody.innerHTML = indexedData.map(item => `
+                <tr class="hover:bg-gray-100 dark:hover:bg-gray-700 ${item.type === 'payment' ? 'bg-green-50 dark:bg-green-900' : ''}">
+                    <td class="px-6 py-4 whitespace-nowrap">${item.index}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${item.entityName || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${item.prod || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${formatDate(item.loadingDate)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${item.volProd || 0}</td>
+                    <td class="px-6 py-4 whitespace-nowrap ${item.type === 'payment' ? 'font-semibold text-green-600 dark:text-green-400' : ''}">${item.truckDetails || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            ${item.type === 'payment' ? 'bg-green-100 text-green-800' : 
+                            item.status === 'offloaded' ? 'bg-green-100 text-green-800' : 
+                            'bg-yellow-100 text-yellow-800'}">
+                            ${item.type === 'payment' ? 'Payment' : item.status || 'pending'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">${item.depot || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">$${item.payable || 0}</td>
+                    <td class="px-6 py-4 whitespace-nowrap ${item.type === 'payment' ? 'text-green-600 dark:text-green-400' : ''}">$${item.payment || 0}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">$${item.cumBalance || 0}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Also update the Excel export to use the same date format
+        function formatDataForExcel(data) {
+            return data.map((item, index) => ({
+                'INDEX': index + 1,
+                'Loading Date': formatDate(item.loadingDate),
+                'Vol': item.volProd || 0,
+                'Prod': item.entityName || '-',
+                'Truck Details': item.truckDetails || '-',
+                'Status': item.status || '-',
+                'depot': item.depot || '-',
+                'payble': item.payable || 0,
+                'Payment': item.payment || 0,
+                'Cum Balance': item.cumBalance || 0
+            }));
+        }
+
+        function updateCharts() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
+            // Volume Chart
+            const volumeCtx = document.getElementById('volumeChart').getContext('2d');
+            if (volumeChart) volumeChart.destroy();
+            volumeChart = new Chart(volumeCtx, {
+                type: 'bar',
+                data: {
+                    labels: filteredData.map(truck => truck.truckNo),
+                    datasets: [
+                        {
+                            label: 'Volume',
+                            data: filteredData.map(truck => truck.volProd || 0),
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Volume (L)',
+                                color: textColor,
+                            },
+                            ticks: { color: textColor },
+                            grid: { color: gridColor },
+                        },
+                        x: {
+                            ticks: { color: textColor },
+                            grid: { color: gridColor },
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: textColor },
+                        },
+                    },
+                }
+            });
+
+            // Payment Chart
+            const paymentCtx = document.getElementById('paymentChart').getContext('2d');
+            if (paymentChart) paymentChart.destroy();
+            const totalPaid = filteredData.reduce((sum, payment) => sum + (payment.payment || 0), 0);
+            const totalBalance = filteredData.reduce((sum, payment) => sum + (payment.cumBalance || 0), 0);
+            paymentChart = new Chart(paymentCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Paid', 'Balance'],
+                    datasets: [{
+                        data: [totalPaid, totalBalance],
+                        backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: textColor },
+                        },
+                    },
+                }
+            });
+        }
+
+        function setTheme(isDark) {
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                localStorage.theme = 'dark';
+            } else {
+                document.documentElement.classList.remove('dark');
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                localStorage.theme = 'light';
+            }
+            updateCharts();
+        }
+
+        function toggleTheme() {
+            setTheme(!document.documentElement.classList.contains('dark'));
+        }
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('-translate-x-full');
+        }
+
+        // Add this function to format the data for Excel export
+        function formatDataForExcel(data) {
+            return data.map((item, index) => ({
+                'INDEX': index + 1,
+                'Loading Date': formatDate(item.loadingDate),
+                'Entity': item.entityName || '-',
+                'Product': item.prod || '-',
+                'Vol': item.volProd || 0,
+                'Prod': item.entityName || '-',
+                'Truck Details': item.truckDetails || '-',
+                'Status': item.status || '-',
+                'depot': item.depot || '-',
+                'payble': item.payable || 0,
+                'Payment': item.payment || 0,
+                'Cum Balance': item.cumBalance || 0
+            }));
+        }
+
+        // Update the downloadExcel function
+        function downloadExcel() {
+            const formattedData = formatDataForExcel(filteredData);
+            const worksheet = XLSX.utils.json_to_sheet(formattedData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+            XLSX.writeFile(workbook, "transport_records.xlsx");
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                console.log(jsonData); // Process the uploaded data as needed
+                alert('Data uploaded successfully!');
+                // Here you would typically update your data structures and re-render the tables and charts
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Initialize the page when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+
+            // Authentication check
+            firebase.auth().onAuthStateChanged(user => {
+                if (!user) {
+                    window.location.href = 'index.html';
+                } else {
+                    initPage();
+                }
+            });
+
+            // Add payment modal to DOM
+            document.body.insertAdjacentHTML('beforeend', paymentModalHTML);
+        });
+
+        // Back to dashboard button
+        const backToDashboard = document.getElementById('backToDashboard');
+        if (backToDashboard) {
+            backToDashboard.addEventListener('click', () => {
+                window.location.href = 'dashboard.html';
+            });
+        }
+
+        // Wait for DOMContentLoaded before initializing particles
+        window.addEventListener('load', () => {
+            const particlesElement = document.getElementById('particles-js');
+            if (particlesElement) {
+                particlesJS('particles-js', {
+                    particles: {
+                        number: { value: 80, density: { enable: true, value_area: 800 } },
+                        color: { value: "#4ade80" },
+                        shape: { type: "circle" },
+                        opacity: { value: 0.5, random: false, anim: { enable: false } },
+                        size: { value: 3, random: true, anim: { enable: false } },
+                        line_linked: { enable: true, distance: 150, color: "#4ade80", opacity: 0.4, width: 1 },
+                        move: { enable: true, speed: 2, direction: "none", random: false, straight: false, out_mode: "out", bounce: false }
+                    },
+                    interactivity: {
+                        detect_on: "canvas",
+                        events: { onhover: { enable: true, mode: "repulse" }, onclick: { enable: true, mode: "push" }, resize: true },
+                        modes: { repulse: { distance: 100, duration: 0.4 }, push: { particles_nb: 4 } }
+                    },
+                    retina_detect: true
+                });
+            }
+        });
+
+        function initializeSubcontractorHandlers() {
+            const modal = document.getElementById('subcontractorModal');
+            const addButton = document.getElementById('addSubcontractor');
+            const closeButton = document.getElementById('closeModal');
+            const form = document.getElementById('subcontractorForm');
+
+            if (!modal || !addButton || !closeButton || !form) {
+                console.error('Modal elements not found');
+                return;
+            }
+
+            // Show modal
+            addButton.addEventListener('click', () => {
+                modal.classList.remove('hidden');
+                setTimeout(() => modal.classList.add('active'), 10);
+            });
+
+            // Hide modal
+            const hideModal = () => {
+                modal.classList.remove('active');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            };
+
+            closeButton.addEventListener('click', hideModal);
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) hideModal();
+            });
+
+            // Form submission
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const user = firebase.auth().currentUser;
+                if (!user) return;
+
+                try {
+                    const subcontractorData = {
+                        entityName: document.getElementById('entityName').value,
+                        transporterName: document.getElementById('transporterName').value,
+                        contractValue: parseFloat(document.getElementById('contractValue').value),
+                        status: document.getElementById('status').value,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        userId: user.uid
+                    };
+
+                    await firebase.firestore()
+                        .collection('users')
+                        .doc(user.uid)
+                        .collection('subcontractors')
+                        .add(subcontractorData);
+
+                    hideModal();
+                    form.reset();
+                    alert('Subcontractor added successfully!');
+                    loadSubcontractors();
+                } catch (error) {
+                    console.error('Error adding subcontractor:', error);
+                    alert('Error adding subcontractor');
+                }
+            });
+        }
+
+        // Add this function to load subcontractors
+        async function loadSubcontractors() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            try {
+                const db = firebase.firestore();
+        
+                // First get all subcontractors
+                const snapshot = await db
+                    .collection('users')
+                    .doc(user.uid)
+                    .collection('subcontractors')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+
+                const subcontractors = [];
+                snapshot.forEach(doc => {
+                    subcontractors.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Update filteredData
+                filteredData = subcontractors;
+
+                // Get unique entities
+                const uniqueEntities = [...new Set(subcontractors.map(s => s.entityName))];
+                
+                // Populate entity dropdown
+                if (entitySelect) {
+                    entitySelect.innerHTML = '<option value="">Select Entity</option>';
+                    uniqueEntities.forEach(entity => {
+                        if (entity) { // Only add if entity exists
+                            const option = document.createElement('option');
+                            option.value = entity;
+                            option.textContent = entity;
+                            entitySelect.appendChild(option);
+                        }
+                    });
+                }
+
+                // Handle entity change to populate transporters
+                handleEntityChange();
+                
+                // Update UI
+                updateTables();
+                updateCharts();
+                updateStats();
+
+            } catch (error) {
+                console.error('Error loading subcontractors:', error);
+            }
+        }
+
+        // Add this function to handle entity payments
+        function addEntityPayment(user) {
+            const amount = parseFloat(document.getElementById('paymentAmount').value);
+            const paymentData = {
+                entityName: entitySelect.value,
+                loadingDate: new Date().toISOString().split('T')[0],
+                truckDetails: 'Payment',
+                status: 'completed',
+                depot: '-',
+                volProd: 0,
+                payable: amount,
+                payment: amount,
+                cumBalance: 0,
+                type: 'payment',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            return firebase.firestore()
+                .collection('users')
+                .doc(user.uid)
+                .collection('transports')
+                .add(paymentData);
+        }
+
+        // Add real-time updates listener
+        function setupRealtimeListeners(user) {
+            const db = firebase.firestore();
+            
+            // Listen for subcontractors changes
+            db.collection('users').doc(user.uid).collection('subcontractors')
+                .onSnapshot(snapshot => {
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'added' || change.type === 'modified') {
+                            initFirebaseListeners(user); // Reload all data
+                        }
+                    });
+                });
+
+            // Listen for transports changes
+            db.collection('users').doc(user.uid).collection('transports')
+                .onSnapshot(snapshot => {
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'added' || change.type === 'modified') {
+                            initFirebaseListeners(user); // Reload all data
+                        }
+                    });
+                });
+        }
+
+        // Add payment modal HTML after the main table
+        const paymentModalHTML = `
+        <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full glass-effect">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Entity Payment</h3>
+                        <button id="cancelPayment" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <form id="paymentForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Payment Amount</label>
+                            <input type="number" 
+                                   id="paymentAmount" 
+                                   class="w-full rounded border p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
+                                   required 
+                                   step="0.01" 
+                                   min="0">
+                        </div>
+                        <div class="flex justify-end space-x-2 mt-4">
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-save mr-2"></i>Save Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>`;
+
+        // Add a button for adding payments
+        const addPaymentButtonHTML = `
+        <button id="addPayment" class="btn-primary">
+            <i class="fas fa-plus mr-2"></i>Add Payment
+        </button>`;
+
+        // Add this to your initPage function
+        function initPage() {
+            setupEventListeners();
+            initializeSubcontractorHandlers();
+            loadSubcontractors();
+            setupPaymentModal(); // Add this line
+        }
+
+        // Add this new function to handle payment modal setup
+        function setupPaymentModal() {
+            const paymentModal = document.getElementById('paymentModal');
+            const addPaymentBtn = document.getElementById('addPayment');
+            const cancelPaymentBtn = document.getElementById('cancelPayment');
+            const paymentForm = document.getElementById('paymentForm');
+
+            console.log('Modal elements:', { paymentModal, addPaymentBtn, cancelPaymentBtn, paymentForm }); // Debug
+
+            if (!paymentModal || !addPaymentBtn || !cancelPaymentBtn || !paymentForm) {
+                console.error('Payment modal elements not found');
+                return;
+            }
+
+            // Show modal when Add Payment is clicked
+            addPaymentBtn.addEventListener('click', () => {
+                if (!entitySelect.value) {
+                    alert('Please select an entity first');
+                    return;
+                }
+                console.log('Opening payment modal'); // Debug
+                paymentModal.classList.remove('hidden');
+            });
+
+            // Hide modal when Cancel is clicked
+            cancelPaymentBtn.addEventListener('click', () => {
+                console.log('Closing payment modal'); // Debug
+                paymentModal.classList.add('hidden');
+                document.getElementById('paymentAmount').value = '';
+            });
+
+            // Handle form submission
+            paymentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const user = firebase.auth().currentUser;
+                if (!user) return;
+
+                try {
+                    const amount = document.getElementById('paymentAmount').value;
+                    if (!amount || amount <= 0) {
+                        alert('Please enter a valid amount');
+                        return;
+                    }
+
+                    await addEntityPayment(user);
+                    paymentModal.classList.add('hidden');
+                    paymentForm.reset();
+                    alert('Payment added successfully!');
+                } catch (error) {
+                    console.error('Error adding payment:', error);
+                    alert('Error adding payment');
+                }
+            });
+        }
+        
+        // Update the populateEntitySelect function
+        function populateEntitySelect(entities) {
+            if (!entitySelect) return;
+            console.log('Populating entities:', entities); // Debug
+            
+            entitySelect.innerHTML = '<option value="">All Entities</option>';
+            const uniqueEntities = [...new Set(entities)].filter(Boolean).sort();
+            
+            uniqueEntities.forEach(entity => {
+                const option = document.createElement('option');
+                option.value = entity;
+                option.textContent = entity;
+                entitySelect.appendChild(option);
+            });
+        }
+
+        // Update handleEntityChange function
+        function handleEntityChange() {
+            if (!transporterSelect || !entitySelect) return;
+            
+            const selectedEntity = entitySelect.value;
+            console.log('Selected entity:', selectedEntity); // Debug
+            
+            // Reset transporter dropdown
+            transporterSelect.innerHTML = '<option value="">All Transporters</option>';
+            
+            // Get unique transporters for the selected entity
+            const transporters = [...new Set(
+                originalData
+                    .filter(item => !selectedEntity || item.entityName === selectedEntity)
+                    .filter(item => item.transporterName)
+                    .map(item => item.transporterName)
+            )].sort();
+
+            console.log('Available transporters:', transporters); // Debug
+
+            transporters.forEach(transporter => {
+                const option = document.createElement('option');
+                option.value = transporter;
+                option.textContent = transporter;
+                transporterSelect.appendChild(option);
+            });
+
+            updateFilteredData();
+        }
+
+        // Update initFirebaseListeners function
+        function initFirebaseListeners(user) {
+            if (!firebase.firestore) {
+                console.error('Firestore is not initialized');
+                return;
+            }
+
+            const db = firebase.firestore();
+            console.log("User ID:", user.uid);
+
+            // First get all subcontractors to populate entities
+            db.collection('users').doc(user.uid).collection('subcontractors')
+                .get()
+                .then(snapshot => {
+                    const entities = [...new Set(snapshot.docs
+                        .map(doc => doc.data().entityName)
+                        .filter(Boolean)
+                    )];
+                    populateEntitySelect(entities);
+                });
+
+            // Then get all transport data
+            Promise.all([
+                db.collection('users').doc(user.uid).collection('subcontractors').get(),
+                db.collection('users').doc(user.uid).collection('transports').get()
+            ]).then(([subcontractorsSnapshot, transportsSnapshot]) => {
+                originalData = [];
+                
+                // Process subcontractors and transports
+                subcontractorsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.entityName) {
+                        originalData.push({
+                            id: doc.id,
+                            ...data,
+                            type: 'subcontractor'
+                        });
+                    }
+                });
+
+                transportsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.entityName) {
+                        originalData.push({
+                            id: doc.id,
+                            ...data,
+                            type: data.type || 'transport'
+                        });
+                    }
+                });
+
+                // Initialize filtered data
+                filteredData = [...originalData];
+                
+                // Update UI
+                updateTables();
+                updateCharts();
+                updateStats();
+            });
+        }
+        
+    </script>
+</head>
+<body class="bg-custom-light dark:bg-custom-dark text-gray-800 dark:text-gray-200 min-h-screen flex flex-col">
+    <div id="particles-js" class="fixed inset-0 z-0 pointer-events-none"></div>
+
+    <!-- Header -->
+    <header class="glass-header fixed w-full top-0 z-50">
+        <!-- Update header content to match dashboard.html -->
+        <div class="container mx-auto px-4 py-2 flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="logo.jpg" alt="Sarura Petroleum Logo" class="h-8 w-8 mr-2 rounded-full border-2 border-custom-accent animate-pulse-slow">
+                <h1 class="text-xl font-bold green-gradient">SARURA PETROLEUM</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="subcontractorform.html" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
+                    <i class="fas fa-plus"></i>
+                </a>
+                <button id="toggle-theme" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
+                    <i class="fas fa-adjust"></i>
+                </button>
+                <a href="dashboard.html" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
+                    <i class="fas fa-home"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-8 relative z-10 pt-20">
+        <h2 class="text-3xl font-bold text-center green-gradient page-title">Subcontractors</h2>
+        <!-- Filters Section -->
+        <section class="mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-effect rounded-lg p-6">
+                    <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
+                        <i class="fas fa-building mr-2 text-custom-accent"></i>Entity
+                    </label>
+                    <select id="entity" class="form-input w-full">
+                        <option value="">Select Entity</option>
+                    </select>
+                </div>
+                <div class="glass-effect rounded-lg p-6">
+                    <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
+                        <i class="fas fa-truck mr-2 text-custom-accent"></i>Transporter
+                    </label>
+                    <select id="transporter" class="form-input w-full">
+                        <option value="">All Transporters</option>
+                    </select>
+                </div>
+                <div class="glass-effect rounded-lg p-6">
+                    <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
+                        <i class="fas fa-money-check-alt mr-2 text-custom-accent"></i>Payment Status
+                    </label>
+                    <select id="paymentStatus" class="form-input w-full">
+                        <option value="">All Status</option>
+                        <option value="paid">Paid</option>
+                        <option value="unpaid">Unpaid</option>
+                        <option value="partial">Partial</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Cards -->
+        <section class="mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="glass-effect rounded-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Total Trucks</p>
+                            <h3 class="text-2xl font-bold text-custom-accent" id="totalTrucks">0</h3>
+                        </div>
+                        <i class="fas fa-truck text-3xl text-custom-accent opacity-20"></i>
+                    </div>
+                </div>
+                <div class="glass-effect rounded-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Total Volume</p>
+                            <h3 class="text-2xl font-bold text-custom-accent" id="totalVolume">0 L</h3>
+                        </div>
+                        <i class="fas fa-gas-pump text-3xl text-custom-accent opacity-20"></i>
+                    </div>
+                </div>
+                <div class="glass-effect rounded-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Total Paid</p>
+                            <h3 class="text-2xl font-bold text-custom-accent" id="totalPaid">$0</h3>
+                        </div>
+                        <i class="fas fa-dollar-sign text-3xl text-custom-accent opacity-20"></i>
+                    </div>
+                </div>
+                <div class="glass-effect rounded-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Outstanding</p>
+                            <h3 class="text-2xl font-bold text-custom-accent" id="totalOutstanding">$0</h3>
+                        </div>
+                        <i class="fas fa-balance-scale text-3xl text-custom-accent opacity-20"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-effect rounded-lg p-6">
+                    <h3 class="text-lg font-semibold mb-4">Volume Analysis</h3>
+                    <div class="h-80">
+                        <canvas id="volumeChart"></canvas>
+                    </div>
+                </div>
+                <div class="glass-effect rounded-lg p-6">
+                    <h3 class="text-lg font-semibold mb-4">Payment Status</h3>
+                    <div class="h-80">
+                        <canvas id="paymentChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Tables -->
+        <section class="mb-8">
+            <div class="glass-effect rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">Transport Records</h3>
+                    <div class="flex gap-4">
+                        <button id="downloadExcel" class="btn-primary">
+                            <i class="fas fa-download mr-2"></i>Export
+                        </button>
+                        <label class="btn-secondary cursor-pointer">
+                            <i class="fas fa-upload mr-2"></i>Import
+                            <input type="file" id="uploadExcel" class="hidden" accept=".xlsx,.xls">
+                        </label>
+                        <button onclick="window.location.href='entitypayment.html'" class="btn-primary">
+                            <i class="fas fa-plus mr-2"></i>Add Payment
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">#</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Entity</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Product</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Loading Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Volume</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Truck Details</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Depot</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Payable</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Payment</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="truckDetailsBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- Truck details will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-footer py-2 mt-auto">
+        <div class="container mx-auto px-4 text-center text-sm text-gray-600 dark:text-gray-400">
+            &copy; 2024 Sarura Petroleum
+        </div>
+    </footer>
+
+    <!-- Add payment modal HTML after the main table -->
+    <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full glass-effect">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Entity Payment</h3>
+                    <button id="cancelPayment" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="paymentForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Payment Amount</label>
+                        <input type="number" 
+                               id="paymentAmount" 
+                               class="w-full rounded border p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
+                               required 
+                               step="0.01" 
+                               min="0">
+                    </div>
+                    <div class="flex justify-end space-x-2 mt-4">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save mr-2"></i>Save Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
