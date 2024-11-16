@@ -466,11 +466,16 @@
         }
 
         // Add this helper function to format dates
-        function formatDate(dateString) {
-            if (!dateString) return '-';
-            const date = new Date(dateString);
+        function formatDate(date) {
+            if (!date) return '-';
+            
+            // Handle both Date objects and Firestore Timestamps
+            const d = date instanceof Date ? date : date.toDate ? date.toDate() : new Date(date);
+            
+            if (isNaN(d.getTime())) return '-'; // Return dash if invalid date
+            
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            return `${date.getDate()}-${months[date.getMonth()]}-${date.getFullYear()}`;
+            return `${d.getDate()}-${months[d.getMonth()]}-${d.getFullYear()}`;
         }
 
         // Modify the updateTables function to show different row styles for payments
@@ -480,14 +485,22 @@
             console.log("Updating tables with data:", filteredData); // Debug
 
             // Add index to the data
-            const indexedData = filteredData.map((item, index) => ({...item, index: index + 1}));
+            const indexedData = filteredData.map((item, index) => {
+                // Ensure proper date formatting for each item
+                const formattedDate = item.loadingDate ? formatDate(item.loadingDate) : '-';
+                return {
+                    ...item, 
+                    index: index + 1,
+                    formattedLoadingDate: formattedDate
+                };
+            });
 
             truckDetailsBody.innerHTML = indexedData.map(item => `
                 <tr class="hover:bg-gray-100 dark:hover:bg-gray-700 ${item.type === 'payment' ? 'bg-green-50 dark:bg-green-900' : ''}">
                     <td class="px-6 py-4 whitespace-nowrap">${item.index}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${item.entityName || '-'}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${item.prod || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${formatDate(item.loadingDate)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${item.formattedLoadingDate}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${item.volProd || 0}</td>
                     <td class="px-6 py-4 whitespace-nowrap ${item.type === 'payment' ? 'font-semibold text-green-600 dark:text-green-400' : ''}">${item.truckDetails || '-'}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
@@ -510,7 +523,9 @@
         function formatDataForExcel(data) {
             return data.map((item, index) => ({
                 'INDEX': index + 1,
-                'Loading Date': formatDate(item.loadingDate),
+                'Loading Date': item.loadingDate ? formatDate(item.loadingDate) : '-',
+                'Entity': item.entityName || '-',
+                'Product': item.prod || '-',
                 'Vol': item.volProd || 0,
                 'Prod': item.entityName || '-',
                 'Truck Details': item.truckDetails || '-',
@@ -622,7 +637,7 @@
         function formatDataForExcel(data) {
             return data.map((item, index) => ({
                 'INDEX': index + 1,
-                'Loading Date': formatDate(item.loadingDate),
+                'Loading Date': item.loadingDate ? formatDate(item.loadingDate) : '-',
                 'Entity': item.entityName || '-',
                 'Product': item.prod || '-',
                 'Vol': item.volProd || 0,
