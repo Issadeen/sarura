@@ -333,17 +333,22 @@
                 spinner.classList.add('show'); // Show spinner
 
                 try {
+                    // Create a valid Date object from the input value
+                    const loadingDateInput = document.getElementById('loadingDate').value;
+                    const loadingDate = loadingDateInput ? new Date(loadingDateInput) : null;
+
                     const data = {
                         entityName: document.getElementById('entityName').value,
                         transporterName: document.getElementById('transporterName').value,
-                        prod: document.getElementById('prod').value, // Add this line
-                        loadingDate: firebase.firestore.Timestamp.fromDate(new Date(document.getElementById('loadingDate').value)),
-                        volProd: parseFloat(document.getElementById('volProd').value),
+                        prod: document.getElementById('prod').value,
+                        // Store date as timestamp if valid, otherwise null
+                        loadingDate: loadingDate ? firebase.firestore.Timestamp.fromDate(loadingDate) : null,
+                        volProd: parseFloat(document.getElementById('volProd').value) || 0,
                         truckDetails: document.getElementById('truckDetails').value,
                         depot: document.getElementById('depot').value,
-                        payable: parseFloat(document.getElementById('payable').value),
-                        payment: parseFloat(document.getElementById('payment').value),
-                        cumBalance: parseFloat(document.getElementById('cumBalance').value),
+                        payable: parseFloat(document.getElementById('payable').value) || 0,
+                        payment: parseFloat(document.getElementById('payment').value) || 0,
+                        cumBalance: parseFloat(document.getElementById('cumBalance').value) || 0,
                         status: document.getElementById('status').value,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                         userId: user.uid
