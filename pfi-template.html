@@ -302,6 +302,18 @@
                 box-shadow: none;
             }
         }
+
+        @media (max-width: 600px) {
+            .page-container {
+                box-shadow: none;
+            }
+        }
+
+        @media print {
+            .page-container {
+                box-shadow: none;
+            }
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
@@ -536,53 +548,25 @@
 
         function downloadPDF() {
             const element = document.querySelector('.invoice');
-            const loadingMsg = document.createElement('div');
-            loadingMsg.textContent = 'Generating PDF...';
-            document.body.appendChild(loadingMsg);
-
             const opt = {
-                margin: 10,
-                filename: `PFI_${document.getElementById('pfiNo').textContent}.pdf`,
+                margin: [10, 10, 10, 10], // Adjust margins as needed
+                filename: `PFI_${document.getElementById('pfi_number').textContent}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false
+                    scale: 2, // Increase scale for better resolution
+                    useCORS: true
                 },
                 jsPDF: {
                     unit: 'mm',
                     format: 'a4',
-                    orientation: 'portrait',
-                    compress: true,
-                    putOnlyUsedFonts: true
+                    orientation: 'portrait'
                 }
             };
-
-            // Generate PDF as blob
-            html2pdf().from(element).set(opt).outputPdf('blob').then((pdfBlob) => {
-                // Create download link
-                const url = URL.createObjectURL(pdfBlob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = opt.filename;
-                document.body.appendChild(a);
-                a.click();
-                
-                // Cleanup
-                setTimeout(() => {
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    document.body.removeChild(loadingMsg);
-                }, 100);
-            }).catch(error => {
-                console.error('PDF generation failed:', error);
-                document.body.removeChild(loadingMsg);
-                alert('Failed to generate PDF. Please try again.');
-            });
+            html2pdf().from(element).set(opt).save();
         }
 
         function generateVerificationId(data) {
-            return `SP-PFI-${data.pfiNumber}-${new Date().getTime()}`;
+            return `SP-PFI-${data.pfi_number}`;
         }
 
         function generateQRCode(url) {
@@ -610,12 +594,31 @@
             });
         }
 
-        window.onload = function() {
-            populatePFINote();
-            populateInvoice();
-            setTimeout(() => {
+        function populatePFI() {
+            const data = getPFIData();
+            
+            // Populate PFI details
+            // ...existing code...
+
+            // Generate QR code with verification details
+            const verificationId = generateVerificationId(data);
+            const verificationUrl = `https://sarurapetroleumltd.com/verify/pfi/${verificationId}`;
+            
+            generateQRCode(verificationUrl).then(() => {
+                document.getElementById('documentRef').textContent = data.pfi_number || 'N/A';
+                document.getElementById('generationTime').textContent = formatDateTime(data.created_at) || 'N/A';
+                
+                // Trigger PDF download after QR code is generated
                 downloadPDF();
-            }, 500);
+            }).catch((error) => {
+                console.error("Error generating QR Code:", error);
+                // Continue to download PDF even if QR code fails
+                downloadPDF();
+            });
+        }
+
+        window.onload = function() {
+            populatePFI();
         }
     </script>
     <img src="logo.jpg" alt="Logo" class="preload-image" crossorigin="anonymous" style="display: none;">
