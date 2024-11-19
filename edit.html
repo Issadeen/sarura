@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Record - Sarura Petroleum</title>
+    <link rel="icon" href="logo.jpg" type="image/jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://kit.fontawesome.com/d00c9b568a.js" crossorigin="anonymous"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-light': '#f5f5f5',
+                        'custom-dark': '#121212',
+                        'custom-accent': '#4ade80',
+                        'custom-accent-hover': '#22c55e',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        .dark .glass-effect {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-header, .glass-footer {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .dark .glass-header, .dark .glass-footer {
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-custom-light dark:bg-custom-dark text-gray-800 dark:text-gray-200 min-h-screen flex flex-col">
+    <div id="particles-js" class="fixed inset-0 z-0"></div>
+
+    <!-- Header -->
+    <header class="glass-header fixed w-full top-0 z-50">
+        <div class="container mx-auto px-4 py-2 flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="logo.jpg" alt="Sarura Petroleum Logo" class="h-8 w-8 mr-2 rounded-full border-2 border-custom-accent animate-pulse-slow">
+                <h1 class="text-xl font-bold text-gray-800 dark:text-gray-200">SARURA PETROLEUM</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="toggle-theme" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
+                    <i class="fas fa-adjust"></i>
+                </button>
+                <a href="subcontractors.html" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 pt-20 relative z-10">
+        <div class="glass-effect w-full max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-gray-200">Edit Record</h2>
+            <form id="editForm" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="entityName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Entity Name</label>
+                        <input type="text" id="entityName" name="entityName" class="mt-1 block w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-custom-accent focus:border-custom-accent sm:text-sm" required>
+                    </div>
+                    <div>
+                        <label for="prod" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Product</label>
+                        <input type="text" id="prod" name="prod" class="mt-1 block w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-custom-accent focus:border-custom-accent sm:text-sm" required>
+                    </div>
+                    <div>
+                        <label for="volProd" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Volume Produced (L)</label>
+                        <input type="number" id="volProd" name="volProd" class="mt-1 block w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-custom-accent focus:border-custom-accent sm:text-sm" step="0.01" required>
+                    </div>
+                    <div>
+                        <label for="truckDetails" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Truck Details</label>
+                        <input type="text" id="truckDetails" name="truckDetails" class="mt-1 block w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-custom-accent focus:border-custom-accent sm:text-sm" required>
+                    </div>
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                        <select id="status" name="status" class="mt-1 block w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-custom-accent focus:border-custom-accent sm:text-sm" required>
+                            <option value="pending">Pending</option>
+                            <option value="offloaded">Offloaded</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="depot" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Depot</label>
+                        <input type="text" id="depot" name="depot" class="mt-1 block w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-custom-accent focus:border-custom-accent sm:text-sm" required>
+                    </div>
+                    <div>
+                        <label for="payable" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Payable ($)</label>
+                        <input type="number" id="payable" name="payable" step="0.01" class="mt-1 block w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-custom-accent focus:border-custom-accent sm:text-sm" required>
+                    </div>
+                    <div>
+                        <label for="payment" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment ($)</label>
+                        <input type="number" id="payment" name="payment" step="0.01" class="mt-1 block w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-custom-accent focus:border-custom-accent sm:text-sm" required>
+                    </div>
+                    <div>
+                        <label for="loadingDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Loading Date</label>
+                        <input type="date" id="loadingDate" name="loadingDate" class="mt-1 block w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-custom-accent focus:border-custom-accent sm:text-sm" required>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 pt-4">
+                    <button type="button" id="cancelEditBtn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-custom-accent text-white rounded-md hover:bg-custom-accent-hover transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-custom-accent focus:ring-opacity-50">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-footer py-2 mt-auto">
+        <div class="container mx-auto px-4 text-center text-sm text-gray-600 dark:text-gray-400">
+            &copy; 2024 Sarura Petroleum
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Wait for DOM to load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize particles.js
+            particlesJS("particles-js", {
+                particles: {
+                    number: { value: 80, density: { enable: true, value_area: 800 } },
+                    color: { value: "#4ade80" },
+                    shape: { type: "circle" },
+                    opacity: { value: 0.5, random: false, anim: { enable: false } },
+                    size: { value: 3, random: true, anim: { enable: false } },
+                    line_linked: { enable: true, distance: 150, color: "#4ade80", opacity: 0.4, width: 1 },
+                    move: { enable: true, speed: 2, direction: "none", random: false, straight: false, out_mode: "out", bounce: false }
+                },
+                interactivity: {
+                    detect_on: "canvas",
+                    events: { onhover: { enable: true, mode: "repulse" }, onclick: { enable: true, mode: "push" }, resize: true },
+                    modes: { repulse: { distance: 100, duration: 0.4 }, push: { particles_nb: 4 } }
+                },
+                retina_detect: true
+            });
+
+            // Set initial theme
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+
+            // Theme toggle functionality
+            const toggleThemeButton = document.getElementById('toggle-theme');
+            toggleThemeButton.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            });
+
+            // Get record ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const recordId = urlParams.get('id');
+            if (!recordId) {
+                alert('No record ID specified.');
+                window.location.href = 'subcontractors.html';
+                return;
+            }
+
+            // Initialize Firebase auth listener
+            firebase.auth().onAuthStateChanged(user => {
+                if (!user) {
+                    window.location.href = 'index.html';
+                } else {
+                    loadRecord(user, recordId);
+                }
+            });
+        });
+
+        // Function to load record data and populate the form
+        function loadRecord(user, recordId) {
+            const db = firebase.firestore();
+            db.collection('users').doc(user.uid).collection('subcontractors').doc(recordId).get()
+                .then(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        document.getElementById('entityName').value = data.entityName || '';
+                        document.getElementById('prod').value = data.prod || '';
+                        document.getElementById('volProd').value = data.volProd || 0;
+                        document.getElementById('truckDetails').value = data.truckDetails || '';
+                        document.getElementById('status').value = data.status || 'pending';
+                        document.getElementById('depot').value = data.depot || '';
+                        document.getElementById('payable').value = data.payable || 0;
+                        document.getElementById('payment').value = data.payment || 0;
+                        document.getElementById('loadingDate').value = data.loadingDate ? formatDateForInput(data.loadingDate) : '';
+                    } else {
+                        alert('Record not found.');
+                        window.location.href = 'subcontractors.html';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching record:', error);
+                    alert('An error occurred while fetching the record.');
+                });
+        }
+
+        // Function to format Firestore Timestamp to YYYY-MM-DD for input
+        function formatDateForInput(timestamp) {
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return date.toISOString().split('T')[0];
+        }
+
+        // Handle form submission
+        document.getElementById('editForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const urlParams = new URLSearchParams(window.location.search);
+            const recordId = urlParams.get('id');
+            if (!recordId) return;
+
+            saveRecordChanges(recordId);
+        });
+
+        // Function to save record changes
+        function saveRecordChanges(recordId) {
+            const db = firebase.firestore();
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            const updatedData = {
+                entityName: document.getElementById('entityName').value,
+                prod: document.getElementById('prod').value,
+                volProd: parseFloat(document.getElementById('volProd').value) || 0,
+                truckDetails: document.getElementById('truckDetails').value,
+                status: document.getElementById('status').value,
+                depot: document.getElementById('depot').value,
+                payable: parseFloat(document.getElementById('payable').value) || 0,
+                payment: parseFloat(document.getElementById('payment').value) || 0,
+                loadingDate: firebase.firestore.Timestamp.fromDate(new Date(document.getElementById('loadingDate').value))
+            };
+
+            db.collection('users').doc(user.uid).collection('subcontractors').doc(recordId).update(updatedData)
+                .then(() => {
+                    alert('Record updated successfully.');
+                    window.location.href = 'subcontractors.html';
+                })
+                .catch(error => {
+                    console.error('Error updating record:', error);
+                    alert('An error occurred while updating the record.');
+                });
+        }
+
+        // Handle Cancel button
+        document.getElementById('cancelEditBtn').addEventListener('click', () => {
+            window.location.href = 'subcontractors.html';
+        });
+    </script>
+</body>
+</html>
