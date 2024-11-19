@@ -128,6 +128,27 @@
         .btn-secondary {
             @apply px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300;
         }
+
+        .spinner {
+            /* Same styles as in subcontractorform.html */
+            display: none;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top-color: #4ade80;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            position: fixed; /* Use fixed position */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999; /* Ensure it's above other elements */
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
     <script>
         tailwind.config = {
@@ -308,21 +329,28 @@
             Promise.all([
                 db.collection('users').doc(user.uid).collection('subcontractors').get(),
                 db.collection('users').doc(user.uid).collection('transports').get()
-            ]).then(([subcontractorsSnapshot, transportsSnapshot]) => {
-                originalData = []; // Reset original data
-                
+            ]).then(async ([subcontractorsSnapshot, transportsSnapshot]) => {
+                originalData = [];
+
                 // Process subcontractors
-                subcontractorsSnapshot.forEach(doc => {
-                    console.log("Subcontractor data:", doc.data()); // Debug data
+                for (const doc of subcontractorsSnapshot.docs) {
                     const data = doc.data();
-                    if (data.entityName && data.transporterName) {
-                        originalData.push({
-                            id: doc.id,
-                            ...data,
-                            type: 'subcontractor'
-                        });
-                    }
-                });
+                    let cumulativeBalance = 0;
+
+                    // Retrieve payments from the 'payments' subcollection
+                    const paymentsSnapshot = await doc.ref.collection('payments').get();
+                    paymentsSnapshot.forEach(paymentDoc => {
+                        const paymentData = paymentDoc.data();
+                        cumulativeBalance += (paymentData.payable || 0) - (paymentData.payment || 0);
+                    });
+
+                    originalData.push({
+                        id: doc.id,
+                        ...data,
+                        cumBalance: cumulativeBalance,
+                        type: 'subcontractor'
+                    });
+                }
 
                 // Process transports
                 transportsSnapshot.forEach(doc => {
@@ -1098,6 +1126,102 @@
             });
         }
         
+        // Update initFirebaseListeners function to calculate cumulative balances
+        function initFirebaseListeners(user) {
+            if (!firebase.firestore) {
+                console.error('Firestore is not initialized');
+                return;
+            }
+
+            const db = firebase.firestore();
+            console.log("User ID:", user.uid);
+
+            Promise.all([
+                db.collection('users').doc(user.uid).collection('subcontractors').orderBy('loadingDate', 'asc').get(),
+                db.collection('users').doc(user.uid).collection('transports').orderBy('loadingDate', 'asc').get()
+            ]).then(([subcontractorsSnapshot, transportsSnapshot]) => {
+                originalData = [];
+                let runningBalance = 0;
+                
+                // Combine all data and sort by date
+                const allDocs = [
+                    ...subcontractorsSnapshot.docs.map(doc => ({doc, type: 'subcontractor'})),
+                    ...transportsSnapshot.docs.map(doc => ({doc, type: 'transport'}))
+                ].sort((a, b) => {
+                    const dateA = getDateFromData(a.doc.data().loadingDate);
+                    const dateB = getDateFromData(b.doc.data().loadingDate);
+                    return dateA - dateB;
+                });
+
+                function getDateFromData(loadingDateField) {
+                    // Check if loadingDateField exists and handle different formats
+                    if (loadingDateField && loadingDateField.toDate) {
+                        return loadingDateField.toDate();
+                    } else if (typeof loadingDateField === 'string') {
+                        return new Date(loadingDateField);
+                    } else {
+                        return new Date(0);
+                    }
+                }
+
+                // Process all documents in chronological order
+                allDocs.forEach(({doc, type}) => {
+                    const data = doc.data();
+                    if (data.entityName) {
+                        // For payments, subtract from running balance
+                        if (data.type === 'payment') {
+                            runningBalance = Math.max(0, runningBalance - (parseFloat(data.payment) || 0));
+                        } else {
+                            // For trips, add payable to running balance and subtract payment
+                            const payable = parseFloat(data.payable) || 0;
+                            const payment = parseFloat(data.payment) || 0;
+                            runningBalance = runningBalance + payable - payment;
+                        }
+
+                        originalData.push({
+                            id: doc.id,
+                            ...data,
+                            cumBalance: runningBalance,
+                            type: data.type || type
+                        });
+                    }
+                });
+
+                // Initialize filtered data
+                filteredData = [...originalData];
+                
+                // Update UI
+                updateTables();
+                updateCharts();
+                updateStats();
+                populateEntitySelect([...new Set(originalData.map(item => item.entityName))]);
+            });
+        }
+
+        // Update updateStats function to calculate totals correctly
+        function updateStats() {
+            if (filteredData.length > 0) {
+                // Count only actual trucks (exclude payments)
+                const truckCount = filteredData.filter(item => item.type !== 'payment').length;
+                document.getElementById('totalTrucks').textContent = truckCount;
+                
+                // Calculate total volume
+                const totalVolume = filteredData.reduce((sum, item) => 
+                    sum + (item.type !== 'payment' ? (parseFloat(item.volProd) || 0) : 0), 0);
+                document.getElementById('totalVolume').textContent = `${totalVolume.toFixed(2)} L`;
+                
+                // Calculate total paid (sum of all payments)
+                const totalPaid = filteredData.reduce((sum, item) => 
+                    sum + (parseFloat(item.payment) || 0), 0);
+                document.getElementById('totalPaid').textContent = `$${totalPaid.toFixed(2)}`;
+                
+                // Get the most recent cumulative balance
+                const lastItem = filteredData[filteredData.length - 1];
+                const totalOutstanding = lastItem ? (parseFloat(lastItem.cumBalance) || 0) : 0;
+                document.getElementById('totalOutstanding').textContent = `$${totalOutstanding.toFixed(2)}`;
+            }
+        }
+        
     </script>
 </head>
 <body class="bg-custom-light dark:bg-custom-dark text-gray-800 dark:text-gray-200 min-h-screen flex flex-col">
@@ -1300,6 +1424,8 @@
             </div>
         </div>
     </div>
+
+    <div id="spinner" class="spinner"></div> <!-- Add spinner element -->
 
 </body>
 </html>
