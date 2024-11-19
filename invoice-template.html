@@ -688,10 +688,7 @@
         }
 
         function generateVerificationId(data) {
-            // Create a unique verification ID using invoice number and timestamp
-            const timestamp = new Date().getTime();
-            const uniqueId = `${data.invoice_number}-${timestamp}`;
-            return btoa(uniqueId).replace(/[^a-zA-Z0-9]/g, '');
+            return `SP-INV-${data.invoice_number}-${new Date().getTime()}`;
         }
 
         window.onload = function() {
