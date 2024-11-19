@@ -305,7 +305,7 @@
         }
 
         // Initialize Firebase listeners
-        function initFirebaseListeners(user) {
+        async function initFirebaseListeners(user) {
             if (!firebase.firestore) {
                 console.error('Firestore is not initialized');
                 return;
@@ -314,92 +314,100 @@
             const db = firebase.firestore();
             console.log("User ID:", user.uid); // Debug user ID
 
-            // First get all subcontractors to populate entities
-            db.collection('users').doc(user.uid).collection('subcontractors')
-                .get()
-                .then(snapshot => {
-                    const entities = [...new Set(snapshot.docs
-                        .map(doc => doc.data().entityName)
-                        .filter(Boolean)
-                    )];
-                    populateEntitySelect(entities);
-                });
+            try {
+                // Get both subcontractors and payments data
+                const [subcontractorsSnapshot, paymentsSnapshot] = await Promise.all([
+                    db.collection('users').doc(user.uid).collection('subcontractors').orderBy('createdAt', 'asc').get(),
+                    db.collection('users').doc(user.uid).collection('payments').orderBy('createdAt', 'asc').get()
+                ]);
 
-            // Then get all transport data
-            Promise.all([
-                db.collection('users').doc(user.uid).collection('subcontractors').get(),
-                db.collection('users').doc(user.uid).collection('transports').get()
-            ]).then(async ([subcontractorsSnapshot, transportsSnapshot]) => {
                 originalData = [];
+                let runningBalanceByEntity = {};
 
-                // Process subcontractors
-                for (const doc of subcontractorsSnapshot.docs) {
+                // Process subcontractors first
+                subcontractorsSnapshot.docs.forEach(doc => {
                     const data = doc.data();
-                    let cumulativeBalance = 0;
+                    const entityName = data.entityName;
+                    
+                    if (!runningBalanceByEntity[entityName]) {
+                        runningBalanceByEntity[entityName] = 0;
+                    }
 
-                    // Retrieve payments from the 'payments' subcollection
-                    const paymentsSnapshot = await doc.ref.collection('payments').get();
-                    paymentsSnapshot.forEach(paymentDoc => {
-                        const paymentData = paymentDoc.data();
-                        cumulativeBalance += (paymentData.payable || 0) - (paymentData.payment || 0);
-                    });
+                    // Add payable to running balance
+                    const payable = parseFloat(data.payable) || 0;
+                    runningBalanceByEntity[entityName] += payable;
 
                     originalData.push({
                         id: doc.id,
                         ...data,
-                        cumBalance: cumulativeBalance,
-                        type: 'subcontractor'
-                    });
-                }
-
-                // Process transports
-                transportsSnapshot.forEach(doc => {
-                    console.log("Transport data:", doc.data()); // Debug data
-                    const data = doc.data();
-                    originalData.push({
-                        id: doc.id,
-                        truckDetails: data.truckDetails || '',
-                        volProd: parseFloat(data.volProd) || 0,
-                        status: data.status || '',
-                        payment: parseFloat(data.payment) || 0,
-                        payable: parseFloat(data.payable) || 0,
-                        cumBalance: parseFloat(data.cumBalance) || 0,
-                        entityName: data.entityName || '',
-                        transporterName: data.transporterName || '',
-                        ...data,
-                        type: data.type || 'transport'
+                        cumBalance: runningBalanceByEntity[entityName],
+                        type: 'transport'
                     });
                 });
 
-                // Initialize filtered data with all data
+                // Process payments and update running balances
+                paymentsSnapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    const entityName = data.entityName;
+                    
+                    if (!runningBalanceByEntity[entityName]) {
+                        runningBalanceByEntity[entityName] = 0;
+                    }
+
+                    // Subtract payment from running balance
+                    const payment = parseFloat(data.amount) || 0;
+                    runningBalanceByEntity[entityName] -= payment;
+
+                    originalData.push({
+                        id: doc.id,
+                        ...data,
+                        cumBalance: runningBalanceByEntity[entityName],
+                        type: 'payment'
+                    });
+                });
+
+                // Initialize filtered data
                 filteredData = [...originalData];
                 
-                console.log("Filtered Data:", filteredData); // Debug final data
-
-                // Update everything
+                // Update UI
                 updateTables();
                 updateCharts();
                 updateStats();
                 populateEntitySelect([...new Set(originalData.map(item => item.entityName))]);
-            }).catch(error => {
-                console.error("Error fetching data:", error);
-            });
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
         }
 
         // Update stats cards with real data
         function updateStats() {
             if (filteredData.length > 0) {
                 // Count only actual trucks (exclude payments)
-                const truckCount = filteredData.filter(item => item.type !== 'payment').length;
+                const truckCount = filteredData.filter(item => item.type === 'transport').length;
                 document.getElementById('totalTrucks').textContent = truckCount;
                 
-                const totalVolume = filteredData.reduce((sum, item) => sum + (parseFloat(item.volProd) || 0), 0);
+                // Calculate total volume from transport records only
+                const totalVolume = filteredData
+                    .filter(item => item.type === 'transport')
+                    .reduce((sum, item) => sum + (parseFloat(item.volProd) || 0), 0);
                 document.getElementById('totalVolume').textContent = `${totalVolume.toFixed(2)} L`;
                 
-                const totalPaid = filteredData.reduce((sum, item) => sum + (parseFloat(item.payment) || 0), 0);
+                // Calculate total payments from payment records only
+                const totalPaid = filteredData
+                    .filter(item => item.type === 'payment')
+                    .reduce((sum, item) => sum + (parseFloat(item.payment) || 0), 0);
                 document.getElementById('totalPaid').textContent = `$${totalPaid.toFixed(2)}`;
                 
-                const totalOutstanding = filteredData.reduce((sum, item) => sum + (parseFloat(item.cumBalance) || 0), 0);
+                // Get the latest balance by entity
+                const latestBalanceByEntity = {};
+                filteredData.forEach(item => {
+                    latestBalanceByEntity[item.entityName] = item.cumBalance || 0;
+                });
+                
+                // Sum all outstanding balances
+                const totalOutstanding = Object.values(latestBalanceByEntity)
+                    .reduce((sum, balance) => sum + balance, 0);
                 document.getElementById('totalOutstanding').textContent = `$${totalOutstanding.toFixed(2)}`;
             }
         }
@@ -540,9 +548,9 @@
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">${item.depot || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">$${item.payable || 0}</td>
-                    <td class="px-6 py-4 whitespace-nowrap ${item.type === 'payment' ? 'text-green-600 dark:text-green-400' : ''}">$${item.payment || 0}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">$${item.cumBalance || 0}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">$${(item.payable || 0).toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap ${item.type === 'payment' ? 'text-green-600 dark:text-green-400' : ''}">$${(item.payment || 0).toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">$${(item.cumBalance || 0).toFixed(2)}</td>
                 </tr>
             `).join('');
         }
@@ -612,18 +620,26 @@
                 }
             });
 
-            // Payment Chart
+            // Payment Chart - Updated Logic
             const paymentCtx = document.getElementById('paymentChart').getContext('2d');
             if (paymentChart) paymentChart.destroy();
-            const totalPaid = filteredData.reduce((sum, payment) => sum + (payment.payment || 0), 0);
-            const totalBalance = filteredData.reduce((sum, payment) => sum + (payment.cumBalance || 0), 0);
+            
+            // Calculate totals properly
+            const totalPayable = filteredData.reduce((sum, item) => 
+                sum + (item.type !== 'payment' ? (parseFloat(item.payable) || 0) : 0), 0);
+            const totalPaid = filteredData.reduce((sum, item) => 
+                sum + (parseFloat(item.payment) || 0), 0);
+            const totalBalance = Math.max(0, totalPayable - totalPaid); // Ensure balance is not negative
+
             paymentChart = new Chart(paymentCtx, {
                 type: 'pie',
                 data: {
-                    labels: ['Paid', 'Balance'],
+                    labels: ['Paid', 'Outstanding Balance'],
                     datasets: [{
                         data: [totalPaid, totalBalance],
-                        backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)']
+                        backgroundColor: ['rgba(74, 222, 128, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                        borderColor: ['rgba(74, 222, 128, 1)', 'rgba(255, 99, 132, 1)'],
+                        borderWidth: 1
                     }]
                 },
                 options: {
@@ -631,9 +647,25 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            labels: { color: textColor },
+                            labels: { 
+                                color: textColor,
+                                font: {
+                                    size: 14
+                                }
+                            },
                         },
-                    },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = totalPaid + totalBalance;
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
                 }
             });
         }
@@ -890,7 +922,7 @@
             return firebase.firestore()
                 .collection('users')
                 .doc(user.uid)
-                .collection('transports')
+                .collection('payments')
                 .add(paymentData);
         }
 
@@ -1426,6 +1458,18 @@
     </div>
 
     <div id="spinner" class="spinner"></div> <!-- Add spinner element -->
+
+    <!-- In the HTML, make sure these elements have the correct IDs -->
+    <span id="payable"></span>
+    <span id="payment"></span>
+    <span id="balance"></span>
+
+    <script>
+        // In the JavaScript, assign values to the elements
+        document.getElementById('payable').textContent = subcontractor.payable || '0';
+        document.getElementById('payment').textContent = subcontractor.payment || '0';
+        document.getElementById('balance').textContent = subcontractor.balance || '0';
+    </script>
 
 </body>
 </html>
