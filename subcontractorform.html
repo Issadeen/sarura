@@ -348,31 +348,18 @@
                 }
 
                 const spinner = document.getElementById('spinner');
-                spinner.classList.add('show'); // Show spinner
+                spinner.classList.add('show');
 
                 try {
+                    const db = firebase.firestore();
+                    const batch = db.batch();
+                    
                     const loadingDateInput = document.getElementById('loadingDate').value;
                     const loadingDate = loadingDateInput ? new Date(loadingDateInput) : null;
                     const payable = parseFloat(document.getElementById('payable').value) || 0;
                     const payment = parseFloat(document.getElementById('payment').value) || 0;
 
-                    // Get the current outstanding balance
-                    const db = firebase.firestore();
-                    const lastDoc = await db.collection('users')
-                        .doc(user.uid)
-                        .collection('subcontractors')
-                        .orderBy('loadingDate', 'desc')
-                        .limit(1)
-                        .get();
-
-                    let previousBalance = 0;
-                    if (!lastDoc.empty) {
-                        previousBalance = lastDoc.docs[0].data().cumBalance || 0;
-                    }
-
-                    // Calculate new balance by adding payable and subtracting payment
-                    const newBalance = previousBalance + payable - payment;
-
+                    // Save main subcontractor data with payment included
                     const subcontractorData = {
                         entityName: document.getElementById('entityName').value,
                         transporterName: document.getElementById('transporterName').value,
@@ -382,48 +369,44 @@
                         truckDetails: document.getElementById('truckDetails').value,
                         depot: document.getElementById('depot').value,
                         status: document.getElementById('status').value,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        userId: user.uid
-                    };
-
-                    const paymentData = {
                         payable: payable,
-                        payment: payment,
-                        cumBalance: newBalance,
+                        payment: payment, // Include initial payment here
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        userId: user.uid,
+                        type: 'transport'
                     };
 
-                    const subcontractorsRef = firebase.firestore()
-                        .collection('users')
+                    // Add subcontractor data to batch
+                    const subcontractorRef = db.collection('users')
                         .doc(user.uid)
-                        .collection('subcontractors');
+                        .collection('subcontractors')
+                        .doc();
+                    batch.set(subcontractorRef, subcontractorData);
 
-                    if (subcontractorId) {
-                        // Update existing subcontractor
-                        await subcontractorsRef.doc(subcontractorId).update(subcontractorData);
-
-                        // Save payment data under the 'payments' subcollection
-                        await subcontractorsRef.doc(subcontractorId)
-                            .collection('payments')
-                            .add(paymentData);
-                    } else {
-                        // Create new subcontractor
-                        subcontractorData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                        const subcontractorDocRef = await subcontractorsRef.add(subcontractorData);
-
-                        // Save payment data under the 'payments' subcollection
-                        await subcontractorDocRef
-                            .collection('payments')
-                            .add(paymentData);
+                    // Commit batch with retry logic
+                    let retries = 3;
+                    while (retries > 0) {
+                        try {
+                            await batch.commit();
+                            break;
+                        } catch (error) {
+                            if (error.code === 'permission-denied' || /ERR_BLOCKED/.test(error.message)) {
+                                console.warn('Request blocked, retrying...', error);
+                                retries--;
+                                await new Promise(resolve => setTimeout(resolve, 1000));
+                                continue;
+                            }
+                            throw error;
+                        }
                     }
 
                     window.location.href = 'subcontractors.html';
                 } catch (error) {
-                    console.error('Error saving subcontractor:', error);
-                    alert('Error saving subcontractor');
+                    console.error('Error saving data:', error);
+                    alert('Error saving data: ' + error.message);
                 } finally {
-                    spinner.classList.remove('show'); // Hide spinner
+                    spinner.classList.remove('show');
                 }
             });
 
@@ -694,11 +677,12 @@
                         truckDetails: row['Truck Details']?.trim() || '',
                         depot: row['Depot']?.trim() || '',
                         payable: parseFloat(row['Payable Amount']) || 0,
-                        payment: parseFloat(row['Payment Amount']) || 0,
+                        payment: parseFloat(row['Payment Amount']) || 0, // Include payment in same record
                         status: (row['Status']?.toLowerCase()?.trim() || 'pending'),
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        userId: user.uid
+                        userId: user.uid,
+                        type: 'transport'
                     };
 
                     // Validate the formatted data
@@ -826,4 +810,4 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </body>
-</html> 
+</html>
