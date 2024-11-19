@@ -76,53 +76,45 @@
 
     <script>
         window.onload = function() {
-            const params = new URLSearchParams(window.location.search);
-            const type = params.get('type') || '';
-            const id = params.get('id') || '';
-            
-            if (!type || !id) {
-                showError('Invalid verification link');
-                return;
-            }
-
-            // Parse document ID (format: SP-TYPE-NUMBER-TIMESTAMP)
-            const parts = id.split('-');
-            if (parts.length < 4) {
-                showError('Invalid document ID');
-                return;
-            }
-
-            const docType = getDocumentType(type);
-            const docNumber = parts[2];
-            const timestamp = parts[3];
-
-            // Show verification result
-            showVerification({
-                type: docType,
-                number: docNumber,
-                timestamp: timestamp
-            });
+            verifyDocument();
         }
 
-        function showVerification(doc) {
-            const verificationResult = document.getElementById('verificationResult');
-            const documentDetails = document.getElementById('documentDetails');
+        function verifyDocument() {
+            const params = new URLSearchParams(window.location.search);
+            const docId = params.get('id');
 
+            if (!docId) {
+                showError('No document ID provided.');
+                return;
+            }
+
+            // Example verification logic
+            fetch(`https://sarurapetroleumltd.com/api/verify/${docId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.isValid) {
+                        displaySuccess(data);
+                    } else {
+                        showError('Invalid or expired document.');
+                    }
+                })
+                .catch(() => {
+                    showError('Verification service is unavailable.');
+                });
+        }
+
+        function displaySuccess(data) {
+            const verificationResult = document.getElementById('verificationResult');
             verificationResult.className = 'verification-result valid';
             verificationResult.innerHTML = `
-                <h3>✓ Document Verified</h3>
-                <p>This is a valid ${doc.type} issued by Sarura Petroleum Ltd.</p>
-            `;
-
-            documentDetails.style.display = 'block';
-            documentDetails.innerHTML = `
-                <p><strong>Document Type:</strong> ${doc.type}</p>
-                <p><strong>Document Number:</strong> ${doc.number}</p>
-                <p><strong>Generated:</strong> ${formatDate(doc.timestamp)}</p>
+                <h3>✓ Verification Successful</h3>
+                <p>Document Type: ${getDocumentType(data.type)}</p>
+                <p>Issued On: ${formatDateTime(data.issuedOn)}</p>
+                <p>Verified At: ${formatDateTime(data.verifiedAt)}</p>
             `;
         }
 
-        function formatDate(timestamp) {
+        function formatDateTime(timestamp) {
             return new Date(parseInt(timestamp)).toLocaleString('en-GB', {
                 day: '2-digit',
                 month: 'short',
