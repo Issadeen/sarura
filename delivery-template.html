@@ -573,10 +573,7 @@
         }
         
         function generateVerificationId(data) {
-            // Create a unique verification ID using delivery number and timestamp
-            const timestamp = new Date().getTime();
-            const uniqueId = `${data.delivery_number}-${timestamp}`;
-            return btoa(uniqueId).replace(/[^a-zA-Z0-9]/g, '');
+            return `SP-DEL-${data.delivery_number}-${new Date().getTime()}`;
         }
 
         function downloadPDF() {
@@ -963,3 +960,13 @@
 </script>
 <!-- ...existing code... -->
 <img src="logo.jpg" alt="Logo" class="preload-image" crossorigin="anonymous" style="display: none;">
+<!-- ...existing code... -->
+<script>
+    // Use the same downloadPDF and QR code functions as above
+    // but update the verification URL to use 'type=delivery'
+    function generateVerificationId(data) {
+        return `SP-DEL-${data.delivery_number}-${new Date().getTime()}`;
+    }
+</script>
+<!-- Remove theme related code -->
+<!-- ...existing code... -->
