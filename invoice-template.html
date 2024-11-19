@@ -24,7 +24,7 @@
         }
         .invoice {
             width: 100%;
-            padding: 0.8cm;
+            padding: 1cm;
             margin: 0;
             background-color: white;
             box-shadow: none;
@@ -377,6 +377,35 @@
                 print-color-adjust: exact !important;
             }
         }
+
+        /* Add media queries for mobile devices */
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 24px;
+            }
+            .info {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            table, th, td {
+                font-size: 0.8em;
+            }
+            .footer p {
+                font-size: 0.7em;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .page-container {
+                box-shadow: none;
+            }
+        }
+
+        @media print {
+            .page-container {
+                box-shadow: none;
+            }
+        }
     </style>
     <!-- Include QR code library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -537,7 +566,7 @@
 
             // Generate QR code with verification details
             const verificationId = generateVerificationId(data);
-            const verificationUrl = `https://sarurapetroleumltd.com/verify/${verificationId}`; // Update to your actual domain and ensure the /verify endpoint exists
+            const verificationUrl = `https://sarurapetroleumltd.com/verify/invoice/${verificationId}`;
             
             generateQRCode(verificationUrl).then(() => {
                 // Set verification text
@@ -564,70 +593,21 @@
 
         function downloadPDF() {
             const element = document.querySelector('.invoice');
-            const loadingMsg = document.createElement('div');
-            loadingMsg.className = 'pdf-loading';
-            loadingMsg.textContent = 'Generating PDF...';
-            document.body.appendChild(loadingMsg);
-
-            // Convert images to base64 first
-            const images = element.getElementsByTagName('img');
-            const imagePromises = Array.from(images).map(img => {
-                return new Promise((resolve) => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const newImg = new Image();
-                    newImg.crossOrigin = 'anonymous';
-                    newImg.onload = () => {
-                        canvas.width = newImg.width;
-                        canvas.height = newImg.height;
-                        ctx.drawImage(newImg, 0, 0);
-                        try {
-                            img.src = canvas.toDataURL('image/png');
-                        } catch (e) {
-                            console.warn('Could not convert image:', e);
-                        }
-                        resolve();
-                    };
-                    newImg.onerror = () => {
-                        console.warn('Could not load image:', img.src);
-                        resolve();
-                    };
-                    newImg.src = img.src;
-                });
-            });
-
-            Promise.all(imagePromises)
-                .then(() => {
-                    const opt = {
-                        margin: 10,
-                        filename: `Invoice_${document.getElementById('invoice_number').textContent}.pdf`,
-                        image: { type: 'jpeg', quality: 1 },
-                        html2canvas: {
-                            scale: 2,
-                            useCORS: true,
-                            allowTaint: true,
-                            foreignObjectRendering: true,
-                            logging: false,
-                            removeContainer: true
-                        },
-                        jsPDF: {
-                            unit: 'mm',
-                            format: 'a4',
-                            orientation: 'portrait',
-                            compress: true
-                        }
-                    };
-
-                    return html2pdf().from(element).set(opt).save();
-                })
-                .then(() => {
-                    document.body.removeChild(loadingMsg);
-                })
-                .catch(error => {
-                    console.error('PDF generation failed:', error);
-                    document.body.removeChild(loadingMsg);
-                    alert('Failed to generate PDF. Please try again.');
-                });
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: `Invoice_${document.getElementById('invoice_number').textContent}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait'
+                }
+            };
+            html2pdf().from(element).set(opt).save();
         }
 
         function formatDate(dateString) {
@@ -688,7 +668,7 @@
         }
 
         function generateVerificationId(data) {
-            return `SP-INV-${data.invoice_number}-${new Date().getTime()}`;
+            return `SP-INV-${data.invoice_number}`;
         }
 
         window.onload = function() {
