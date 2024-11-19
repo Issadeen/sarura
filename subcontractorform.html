@@ -79,13 +79,16 @@
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
-            position: absolute;
+            z-index: 9999; /* Ensure spinner is above other elements */
+            /* Adjust position to cover the whole screen */
+            position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
         }
 
         @keyframes spin {
+            from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
 
@@ -258,6 +261,21 @@
         </div>
     </main>
 
+    <!-- Add Modal for Missing Data -->
+    <div id="missingDataModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg">
+            <h3 id="missingDataModalTitle" class="text-xl font-semibold mb-4">Fill in Missing Data</h3>
+            <form id="missingDataForm">
+                <!-- Dynamic form fields will be inserted here -->
+                <div id="missingFieldsContainer"></div>
+                <div class="flex justify-end space-x-4 mt-4">
+                    <button type="button" id="skipRowButton" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Skip</button>
+                    <button type="submit" class="px-4 py-2 bg-custom-accent text-white rounded hover:bg-custom-accent-hover">Continue</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="glass-footer py-2 mt-auto">
         <div class="container mx-auto px-4 text-center text-sm text-gray-600 dark:text-gray-400">
@@ -333,25 +351,47 @@
                 spinner.classList.add('show'); // Show spinner
 
                 try {
-                    // Create a valid Date object from the input value
                     const loadingDateInput = document.getElementById('loadingDate').value;
                     const loadingDate = loadingDateInput ? new Date(loadingDateInput) : null;
+                    const payable = parseFloat(document.getElementById('payable').value) || 0;
+                    const payment = parseFloat(document.getElementById('payment').value) || 0;
 
-                    const data = {
+                    // Get the current outstanding balance
+                    const db = firebase.firestore();
+                    const lastDoc = await db.collection('users')
+                        .doc(user.uid)
+                        .collection('subcontractors')
+                        .orderBy('loadingDate', 'desc')
+                        .limit(1)
+                        .get();
+
+                    let previousBalance = 0;
+                    if (!lastDoc.empty) {
+                        previousBalance = lastDoc.docs[0].data().cumBalance || 0;
+                    }
+
+                    // Calculate new balance by adding payable and subtracting payment
+                    const newBalance = previousBalance + payable - payment;
+
+                    const subcontractorData = {
                         entityName: document.getElementById('entityName').value,
                         transporterName: document.getElementById('transporterName').value,
                         prod: document.getElementById('prod').value,
-                        // Store date as timestamp if valid, otherwise null
                         loadingDate: loadingDate ? firebase.firestore.Timestamp.fromDate(loadingDate) : null,
                         volProd: parseFloat(document.getElementById('volProd').value) || 0,
                         truckDetails: document.getElementById('truckDetails').value,
                         depot: document.getElementById('depot').value,
-                        payable: parseFloat(document.getElementById('payable').value) || 0,
-                        payment: parseFloat(document.getElementById('payment').value) || 0,
-                        cumBalance: parseFloat(document.getElementById('cumBalance').value) || 0,
                         status: document.getElementById('status').value,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                         userId: user.uid
+                    };
+
+                    const paymentData = {
+                        payable: payable,
+                        payment: payment,
+                        cumBalance: newBalance,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     };
 
                     const subcontractorsRef = firebase.firestore()
@@ -360,10 +400,22 @@
                         .collection('subcontractors');
 
                     if (subcontractorId) {
-                        await subcontractorsRef.doc(subcontractorId).update(data);
+                        // Update existing subcontractor
+                        await subcontractorsRef.doc(subcontractorId).update(subcontractorData);
+
+                        // Save payment data under the 'payments' subcollection
+                        await subcontractorsRef.doc(subcontractorId)
+                            .collection('payments')
+                            .add(paymentData);
                     } else {
-                        data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                        await subcontractorsRef.add(data);
+                        // Create new subcontractor
+                        subcontractorData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                        const subcontractorDocRef = await subcontractorsRef.add(subcontractorData);
+
+                        // Save payment data under the 'payments' subcollection
+                        await subcontractorDocRef
+                            .collection('payments')
+                            .add(paymentData);
                     }
 
                     window.location.href = 'subcontractors.html';
@@ -431,6 +483,7 @@
                     'Depot': '',
                     'Payable Amount': '',
                     'Payment Amount': '',
+                    'Cumulative Balance': '', // Added this field
                     'Status': 'offloaded/pending'
                 }
             ];
@@ -452,46 +505,263 @@
                 
                 if (!user) {
                     alert('Please login first');
+                    spinner.classList.remove('show');
                     return;
                 }
 
-                const batch = firebase.firestore().batch();
-                const subcontractorsRef = firebase.firestore()
-                    .collection('users')
-                    .doc(user.uid)
-                    .collection('subcontractors');
+                let rowIndex = 0;
+                const totalRows = data.length;
 
-                for (const row of data) {
-                    const docRef = subcontractorsRef.doc();
-                    const formattedData = {
-                        entityName: row['Entity Name'],
-                        prod: row['Product'],
-                        transporterName: row['Transporter Name'],
-                        loadingDate: firebase.firestore.Timestamp.fromDate(new Date(row['Loading Date'])),
-                        volProd: parseFloat(row['Volume (M3)']) || 0,
-                        truckDetails: row['Truck Details'],
-                        depot: row['Depot'],
-                        payable: parseFloat(row['Payable Amount']) || 0,
-                        payment: parseFloat(row['Payment Amount']) || 0,
-                        cumBalance: parseFloat(row['Payable Amount'] || 0) - parseFloat(row['Payment Amount'] || 0),
-                        status: row['Status'].toLowerCase(),
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        userId: user.uid
-                    };
-                    batch.set(docRef, formattedData);
+                // Create a progress element with improved styling
+                let progressBar = document.getElementById('progressBar');
+                if (!progressBar) {
+                    progressBar = document.createElement('div');
+                    progressBar.id = 'progressBar';
+                    progressBar.style.position = 'fixed';
+                    progressBar.style.top = '60%';
+                    progressBar.style.left = '50%';
+                    progressBar.style.transform = 'translate(-50%, -50%)';
+                    progressBar.style.padding = '15px 30px';
+                    progressBar.style.borderRadius = '10px';
+                    progressBar.style.zIndex = '10000';
+                    progressBar.style.fontWeight = 'bold';
+                    // Theme-aware styling
+                    const isDark = document.documentElement.classList.contains('dark');
+                    progressBar.style.backgroundColor = isDark ? '#374151' : '#ffffff';
+                    progressBar.style.color = isDark ? '#ffffff' : '#000000';
+                    progressBar.style.boxShadow = isDark ? 
+                        '0 0 10px rgba(255,255,255,0.1)' : 
+                        '0 0 10px rgba(0,0,0,0.2)';
+                    document.body.appendChild(progressBar);
                 }
 
-                await batch.commit();
-                alert('Data uploaded successfully!');
-                window.location.href = 'subcontractors.html';
+                function updateProgress() {
+                    const percentage = Math.floor((rowIndex / totalRows) * 100);
+                    progressBar.textContent = `Uploading... ${percentage}%`;
+                }
+
+                function processNextRow() {
+                    if (rowIndex >= data.length) {
+                        spinner.classList.remove('show');
+                        progressBar.textContent = 'Upload Complete!';
+                        setTimeout(() => {
+                            document.body.removeChild(progressBar);
+                            window.location.href = 'subcontractors.html';
+                        }, 1000);
+                        return;
+                    }
+
+                    const row = data[rowIndex];
+                    rowIndex++;
+                    updateProgress();
+
+                    // Check if Payment Amount is filled
+                    if (row['Payment Amount']) {
+                        // Process as payment
+                        savePaymentData(row, user).then(() => {
+                            processNextRow();
+                        }).catch(error => {
+                            console.error('Error saving payment:', error);
+                            alert('Error saving payment');
+                            spinner.classList.remove('show');
+                        });
+                    } else {
+                        // Check for missing required fields
+                        const requiredFields = ['Entity Name', 'Product', 'Transporter Name', 'Loading Date', 'Payable Amount'];
+                        const missingFields = requiredFields.filter(field => !row[field]);
+
+                        if (missingFields.length > 0) {
+                            // Pass rowIndex to showMissingDataModal
+                            showMissingDataModal(row, missingFields, user, rowIndex).then(() => {
+                                processNextRow();
+                            }).catch(error => {
+                                console.error('Error processing row:', error);
+                                alert('Error processing row');
+                                spinner.classList.remove('show');
+                            });
+                        } else {
+                            // All required data is present, process the row
+                            saveSubcontractorData(row, user).then(() => {
+                                processNextRow();
+                            }).catch(error => {
+                                console.error('Error saving data:', error);
+                                alert('Error saving data');
+                                spinner.classList.remove('show');
+                            });
+                        }
+                    }
+                }
+
+                processNextRow();
 
             } catch (error) {
                 console.error('Error uploading data:', error);
                 alert('Error uploading data: ' + error.message);
-            } finally {
                 spinner.classList.remove('show');
             }
+        }
+
+        function showMissingDataModal(row, missingFields, user, rowNumber) {
+            return new Promise((resolve, reject) => {
+                const modal = document.getElementById('missingDataModal');
+                const missingFieldsContainer = document.getElementById('missingFieldsContainer');
+
+                // Clear previous fields
+                missingFieldsContainer.innerHTML = '';
+
+                // Update modal title with row number
+                const modalTitle = document.getElementById('missingDataModalTitle');
+                modalTitle.textContent = `Fill in Missing Data (Row ${rowNumber})`;
+
+                missingFields.forEach(field => {
+                    const fieldId = field.replace(/\s+/g, '');
+                    const fieldLabel = document.createElement('label');
+                    fieldLabel.textContent = field;
+                    fieldLabel.className = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2';
+
+                    const fieldInput = document.createElement('input');
+                    fieldInput.type = field === 'Loading Date' ? 'date' : 'text';
+                    fieldInput.id = fieldId;
+                    fieldInput.name = field;
+                    fieldInput.value = row[field] || ''; // Prefill with existing data
+                    fieldInput.className = 'w-full p-3 rounded-lg border transition-all duration-300 dark:bg-black dark:text-white dark:border-gray-700 mb-4';
+
+                    missingFieldsContainer.appendChild(fieldLabel);
+                    missingFieldsContainer.appendChild(fieldInput);
+                });
+
+                // Show the modal
+                modal.classList.remove('hidden');
+
+                const form = document.getElementById('missingDataForm');
+                const skipButton = document.getElementById('skipRowButton');
+
+                skipButton.onclick = () => {
+                    // Hide the modal and skip this row
+                    modal.classList.add('hidden');
+                    resolve();
+                };
+
+                form.onsubmit = (e) => {
+                    e.preventDefault();
+                    // Get the filled values
+                    missingFields.forEach(field => {
+                        const fieldId = field.replace(/\s+/g, '');
+                        const value = document.getElementById(fieldId).value;
+                        row[field] = value;
+                    });
+                    // Hide the modal
+                    modal.classList.add('hidden');
+
+                    // Re-validate the row
+                    const stillMissing = missingFields.filter(field => !row[field]);
+                    if (stillMissing.length > 0) {
+                        alert('Please fill in all required fields');
+                        showMissingDataModal(row, stillMissing, user, rowNumber).then(resolve).catch(reject);
+                    } else {
+                        // Save the row data
+                        saveSubcontractorData(row, user).then(resolve).catch(reject);
+                    }
+                };
+            });
+        }
+
+        function saveSubcontractorData(row, user) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    // Improved date parsing
+                    let loadingDate = null;
+                    if (row['Loading Date']) {
+                        if (row['Loading Date'] instanceof Date) {
+                            loadingDate = row['Loading Date'];
+                        } else {
+                            const parsedDate = new Date(row['Loading Date']);
+                            if (!isNaN(parsedDate)) {
+                                loadingDate = parsedDate;
+                            }
+                        }
+                    }
+
+                    // Log the date parsing result
+                    console.log('Parsed loading date:', loadingDate);
+
+                    const formattedData = {
+                        entityName: row['Entity Name']?.trim(),
+                        prod: row['Product']?.trim(),
+                        transporterName: row['Transporter Name']?.trim(),
+                        loadingDate: loadingDate ? firebase.firestore.Timestamp.fromDate(loadingDate) : null,
+                        volProd: parseFloat(row['Volume (M3)']) || 0,
+                        truckDetails: row['Truck Details']?.trim() || '',
+                        depot: row['Depot']?.trim() || '',
+                        payable: parseFloat(row['Payable Amount']) || 0,
+                        payment: parseFloat(row['Payment Amount']) || 0,
+                        status: (row['Status']?.toLowerCase()?.trim() || 'pending'),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        userId: user.uid
+                    };
+
+                    // Validate the formatted data
+                    if (!formattedData.entityName || !formattedData.loadingDate) {
+                        throw new Error('Missing required fields: Entity Name or Loading Date');
+                    }
+
+                    // Log the formatted data
+                    console.log('Formatted data for Firebase:', formattedData);
+
+                    const subcontractorsRef = firebase.firestore()
+                        .collection('users')
+                        .doc(user.uid)
+                        .collection('subcontractors');
+
+                    await subcontractorsRef.add(formattedData);
+                    resolve();
+                } catch (error) {
+                    console.error('Error in saveSubcontractorData:', error);
+                    reject(error);
+                }
+            });
+        }
+
+        function savePaymentData(row, user) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const payment = parseFloat(row['Payment Amount']);
+                    if (isNaN(payment)) {
+                        reject(new Error('Payment Amount must be a number'));
+                        return;
+                    }
+
+                    const subcontractorsRef = firebase.firestore()
+                        .collection('users')
+                        .doc(user.uid)
+                        .collection('subcontractors');
+
+                    const querySnapshot = await subcontractorsRef
+                        .where('entityName', '==', row['Entity Name'])
+                        .get();
+
+                    if (querySnapshot.empty) {
+                        alert('No subcontractor found for payment');
+                        resolve();
+                        return;
+                    }
+
+                    const subcontractorDoc = querySnapshot.docs[0];
+                    const paymentData = {
+                        payment: payment,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    };
+
+                    await subcontractorDoc.ref
+                        .collection('payments')
+                        .add(paymentData);
+
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
         }
 
         function readExcelFile(file) {
@@ -500,12 +770,52 @@
                 reader.onload = (e) => {
                     try {
                         const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
+                        const workbook = XLSX.read(data, {
+                            type: 'array',
+                            cellDates: true,
+                            dateNF: 'yyyy-mm-dd'
+                        });
+
                         const firstSheetName = workbook.SheetNames[0];
                         const worksheet = workbook.Sheets[firstSheetName];
-                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-                        resolve(jsonData);
+
+                        // Parse with headers and proper date handling
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                            raw: false,
+                            dateNF: 'yyyy-mm-dd',
+                            header: 1
+                        });
+
+                        // Convert array format to object with proper date parsing
+                        const headers = jsonData[0];
+                        const formattedData = jsonData.slice(1).map(row => {
+                            const obj = {};
+                            headers.forEach((header, index) => {
+                                let value = row[index];
+                                
+                                // Special handling for dates
+                                if (header === 'Loading Date' && value) {
+                                    // Try multiple date formats
+                                    const possibleDate = new Date(value);
+                                    if (!isNaN(possibleDate)) {
+                                        value = possibleDate.toISOString().split('T')[0];
+                                    } else if (typeof value === 'number') {
+                                        // Handle Excel serial date
+                                        const excelDate = XLSX.SSF.parse_date_code(value);
+                                        value = `${excelDate.y}-${String(excelDate.m).padStart(2, '0')}-${String(excelDate.d).padStart(2, '0')}`;
+                                    }
+                                }
+
+                                obj[header] = value;
+                            });
+                            return obj;
+                        });
+
+                        // Log the parsed data for verification
+                        console.log('Parsed Excel data:', formattedData);
+                        resolve(formattedData);
                     } catch (error) {
+                        console.error('Excel parsing error:', error);
                         reject(error);
                     }
                 };
@@ -516,4 +826,4 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </body>
-</html>
+</html> 
