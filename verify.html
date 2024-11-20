@@ -99,8 +99,13 @@
             }
 
             // Updated verification endpoint
-            fetch(`https://sarurapetroleumltd.com/api/verify/${docId}`)
-                .then(response => response.json())
+            fetch(`https://new-verification-endpoint.com/api/verify/${docId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.isValid) {
                         displaySuccess(data);
@@ -108,8 +113,9 @@
                         showError('Invalid or expired document.');
                     }
                 })
-                .catch(() => {
-                    showError('Verification service is unavailable.');
+                .catch((error) => {
+                    console.error('Verification error:', error);
+                    showError('Verification service is unavailable. Please try again later.');
                 });
         }
 
@@ -130,8 +136,16 @@
         function generateQRCode(data) {
             const qrElement = document.getElementById('qrCode');
             if (qrElement) {
-                // QR code generation logic
-                qrElement.innerHTML = `<!-- QR Code generated based on ${JSON.stringify(data)} -->`;
+                // Clear any existing QR code
+                qrElement.innerHTML = '';
+                // Generate verification URL based on document type
+                const verificationUrl = `https://sarurapetroleumltd.com/verify.html?id=${encodeURIComponent(data.docId)}`;
+                // Generate QR code
+                new QRCode(qrElement, {
+                    text: verificationUrl,
+                    width: 80,
+                    height: 80
+                });
             } else {
                 console.error('QR code element not found.');
                 showError('Failed to generate QR Code.');
