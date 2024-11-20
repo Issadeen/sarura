@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proforma Invoice - Sarura Petroleum</title>
+    <link rel="icon" href="logo.jpg" type="image/jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://kit.fontawesome.com/d00c9b568a.js" crossorigin="anonymous"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-auth-compat.js"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-light': '#f5f5f5',
+                        'custom-dark': '#121212',
+                        'custom-accent': '#4ade80',
+                        'custom-accent-hover': '#22c55e',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .green-gradient {
+            background: linear-gradient(to right, #4ade80, #22c55e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .dark .glass-effect {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-header, .glass-footer {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .dark .glass-header, .dark .glass-footer {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-custom-light dark:bg-custom-dark text-gray-800 dark:text-gray-200 min-h-screen flex flex-col">
+    <div id="particles-js" class="fixed inset-0 z-0 pointer-events-none"></div>
+
+    <!-- Header -->
+    <header class="glass-header fixed w-full top-0 z-50">
+        <div class="container mx-auto px-4 py-2 flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="logo.jpg" alt="Sarura Petroleum Logo" class="h-8 w-8 mr-2 rounded-full border-2 border-custom-accent animate-pulse-slow">
+                <h1 class="text-xl font-bold green-gradient">SARURA PETROLEUM</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="toggle-theme" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
+                    <i class="fas fa-adjust"></i>
+                </button>
+                <a href="documents.html" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 relative z-10 pt-20">
+        <h2 class="text-3xl font-bold text-center green-gradient mb-8">Proforma Invoice</h2>
+        
+        <div class="grid gap-6 mb-8 md:grid-cols-2"></div>
+            <!-- PFI Form -->
+            <div class="glass-effect rounded-lg p-6">
+                <h2 class="text-2xl font-semibold text-sarura-darkgreen dark:text-sarura-lightgreen mb-6">New Proforma Invoice</h2>
+                <form id="pfiForm" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="billTo">Bill To:</label>
+                            <textarea id="billTo" name="billTo" rows="3" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-700 border-transparent focus:border-sarura-darkgreen focus:bg-white focus:ring-0"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="shipTo">Ship To:</label>
+                            <textarea id="shipTo" name="shipTo" rows="3" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-700 border-transparent focus:border-sarura-darkgreen focus:bg-white focus:ring-0"></textarea>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="pfiNumber">PFI Number:</label>
+                            <input type="text" id="pfiNumber" name="pfiNumber" value="SAR-PFI-123" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-700 border-transparent focus:border-sarura-darkgreen focus:bg-white focus:ring-0">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="date">Date:</label>
+                            <input type="date" id="date" name="date" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-700 border-transparent focus:border-sarura-darkgreen focus:bg-white focus:ring-0">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="customerId">Customer ID:</label>
+                        <input type="text" id="customerId" name="customerId" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-700 border-transparent focus:border-sarura-darkgreen focus:bg-white focus:ring-0">
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold">Products</h3>
+                            <button type="button" id="addProduct" 
+                                    class="px-3 py-1 bg-custom-accent text-white rounded-md hover:bg-custom-accent-hover">
+                                <i class="fas fa-plus"></i> Add Product
+                            </button>
+                        </div>
+                        
+                        <div id="productsList" class="space-y-4">
+                            <div class="product-item glass-effect p-4 rounded-lg">
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium">Description:</label>
+                                        <input type="text" name="descriptions[]" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-700 border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium">HS Code:</label>
+                                        <input type="text" name="hsCodes[]" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-700 border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium">Quantity:</label>
+                                        <input type="number" name="quantities[]" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-700 border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium">Unit Price:</label>
+                                        <input type="number" name="unitPrices[]" step="0.01" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-700 border-transparent">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="currency">Currency:</label>
+                            <select id="currency" name="currency" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-700 border-transparent focus:border-sarura-darkgreen focus:bg-white focus:ring-0">
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                                <option value="GBP">GBP</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="paymentTerms">Payment Terms:</label>
+                            <input type="text" id="paymentTerms" name="paymentTerms" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-700 border-transparent focus:border-sarura-darkgreen focus:bg-white focus:ring-0">
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" id="generatePDF" class="px-4 py-2 bg-sarura-darkgreen text-white rounded-md hover:bg-sarura-lightgreen focus:outline-none focus:ring-2 focus:ring-sarura-darkgreen focus:ring-opacity-50">
+                            Generate PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Previous PFIs -->
+            <div class="glass-effect rounded-lg p-6">
+                <h2 class="text-2xl font-semibold text-sarura-darkgreen dark:text-sarura-lightgreen mb-6">Previous Proforma Invoices</h2>
+                <div class="mb-4 flex gap-2">
+                    <input type="text" 
+                           id="pfiSearch" 
+                           placeholder="Search PFIs..." 
+                           class="flex-1 px-3 py-2 placeholder-gray-400 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-md border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-sarura-darkgreen focus:border-transparent">
+                    <button id="searchBtn" 
+                            class="px-4 py-2 bg-sarura-darkgreen text-white rounded-md hover:bg-sarura-lightgreen focus:outline-none focus:ring-2">
+                        Search
+                    </button>
+                </div>
+                <div id="pfiList" class="space-y-4 max-h-96 overflow-y-auto hidden">
+                    <!-- PFI items will be dynamically added here -->
+                </div>
+                <div id="noResults" class="text-center py-4 text-gray-500 dark:text-gray-400 hidden">
+                    No invoices found
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-footer py-2 mt-auto">
+        <div class="container mx-auto px-4 text-center text-sm text-gray-600 dark:text-gray-400">
+            &copy; 2024 Sarura Petroleum
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Firebase (replace with your own config)
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Initialize particles.js
+        particlesJS('particles-js', {
+            particles: {
+                number: {
+                    value: 80,
+                    density: {
+                        enable: true,
+                        value_area: 800
+                    }
+                },
+                color: {
+                    value: '#4ade80'  // matches your green accent color
+                },
+                shape: {
+                    type: 'circle'
+                },
+                opacity: {
+                    value: 0.5,
+                    random: false
+                },
+                size: {
+                    value: 3,
+                    random: true
+                },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: '#4ade80',
+                    opacity: 0.4,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 2,
+                    direction: 'none',
+                    random: false,
+                    straight: false,
+                    out_mode: 'out',
+                    bounce: false
+                }
+            },
+            interactivity: {
+                detect_on: 'canvas',
+                events: {
+                    onhover: {
+                        enable: true,
+                        mode: 'grab'
+                    },
+                    resize: true
+                },
+                modes: {
+                    grab: {
+                        distance: 140,
+                        line_linked: {
+                            opacity: 1
+                        }
+                    }
+                }
+            },
+            retina_detect: true
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('pfiForm');
+            const generatePDFButton = document.getElementById('generatePDF');
+            const pfiSearch = document.getElementById('pfiSearch');
+            const pfiList = document.getElementById('pfiList');
+
+            // Set default date to today
+            document.getElementById('date').valueAsDate = new Date();
+
+            // Check authentication and set initial PFI number
+            firebase.auth().onAuthStateChanged((user) => {
+                if (user) {
+                    loadPreviousPFIs(user.uid);
+                    getNextPFINumber(user.uid);
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
+
+            generatePDFButton.addEventListener('click', async () => {
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    const success = await savePFIData(user.uid);
+                    if (success) {
+                        generatePDF();
+                    }
+                }
+            });
+
+            // Remove the form input event listener that was auto-saving
+            pfiSearch.addEventListener('input', () => {
+                const user = firebase.auth().currentUser;
+                if (user) searchPFIs(user.uid);
+            });
+
+            // Toggle dark mode
+            const darkModeToggle = document.getElementById('toggle-theme');
+            darkModeToggle.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', 
+                    document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+                );
+            });
+
+            // Set theme on load
+            document.addEventListener('DOMContentLoaded', (event) => {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+        });
+        });
+
+        async function getNextPFINumber(userId) {
+            try {
+                const year = new Date().getFullYear();
+                const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
+                
+                const snapshot = await db.collection("users").doc(userId)
+                    .collection("proformaInvoices")
+                    .where('pfiNumber', '>=', `SAR/PFI/${year}/${month}/0000`)
+                    .where('pfiNumber', '<=', `SAR/PFI/${year}/${month}/9999`)
+                    .orderBy('pfiNumber', 'desc')
+                    .limit(1)
+                    .get();
+
+                let nextNumber = '0001';
+                if (!snapshot.empty) {
+                    const lastPFI = snapshot.docs[0].data().pfiNumber;
+                    const lastNumber = parseInt(lastPFI.split('/').pop());
+                    nextNumber = String(lastNumber + 1).padStart(4, '0');
+                }
+
+                const newPFINumber = `SAR/PFI/${year}/${month}/${nextNumber}`;
+                document.getElementById('pfiNumber').value = newPFINumber;
+                return newPFINumber;
+            } catch (error) {
+                console.error("Error getting next PFI number:", error);
+                return `SAR/PFI/${year}/${month}/0001`;
+            }
+        }
+
+        async function savePFIData(userId) {
+            const formData = getFormData();
+
+            // Validate required fields
+            if (!formData.billTo || !formData.pfiNumber || !formData.currency || !formData.paymentTerms || formData.products.length === 0) {
+                alert("Please fill in all required fields and add at least one product.");
+                return false; // Indicate failure
+            }
+
+            // Add stampDate field
+            formData.stampDate = new Date().toISOString();
+            
+            try {
+                await db.collection("users").doc(userId).collection("proformaInvoices").add(formData);
+                console.log("PFI saved successfully");
+                loadPreviousPFIs(userId);
+                await getNextPFINumber(userId); // Update PFI number for next entry
+                return true; // Indicate success
+            } catch (error) {
+                console.error("Error saving PFI:", error);
+                alert("Failed to save PFI. Please try again.");
+                return false; // Indicate failure
+            }
+        }
+
+        function getFormData() {
+            const form = document.getElementById('pfiForm');
+            const descriptions = [...document.getElementsByName('descriptions[]')].map(el => el.value);
+            const hsCodes = [...document.getElementsByName('hsCodes[]')].map(el => el.value);
+            const quantities = [...document.getElementsByName('quantities[]')].map(el => parseInt(el.value));
+            const unitPrices = [...document.getElementsByName('unitPrices[]')].map(el => parseFloat(el.value));
+            
+            const products = descriptions.map((desc, i) => ({
+                description: desc,
+                hsCode: hsCodes[i],
+                quantity: quantities[i],
+                unitPrice: unitPrices[i],
+                amount: quantities[i] * unitPrices[i]
+            }));
+
+            const totalAmount = products.reduce((sum, product) => sum + product.amount, 0);
+
+            return {
+                billTo: form.billTo.value,
+                shipTo: form.shipTo.value,
+                pfiNumber: form.pfiNumber.value,
+                date: form.date.value,
+                customerId: form.customerId.value,
+                currency: form.currency.value,
+                paymentTerms: form.paymentTerms.value,
+                products,
+                totalAmount,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+        }
+
+        async function generatePDF() {
+            const formData = getFormData();
+            try {
+                // Create query parameters
+                const queryParams = new URLSearchParams();
+                
+                // Add basic fields
+                Object.keys(formData).forEach(key => {
+                    if (key === 'products') {
+                        queryParams.append(key, JSON.stringify(formData[key]));
+                    } else if (key === 'createdAt') {
+                        queryParams.append(key, new Date().toISOString());
+                    } else {
+                        queryParams.append(key, formData[key]);
+                    }
+                });
+
+                // Open pfi-template.html in a new window and trigger download
+                const newWindow = window.open(`pfi-template.html?${queryParams.toString()}`, '_blank');
+                newWindow.onload = () => {
+                    newWindow.document.body.onload = () => {
+                        newWindow.downloadPDF(); // Ensure downloadPDF is called after content loads
+                    };
+                };
+            } catch (error) {
+                console.error("Error generating PDF:", error);
+                alert("Error generating PDF");
+            }
+        }
+
+        // Add this new event delegation for dynamic calculations
+        document.getElementById('productsList').addEventListener('input', (e) => {
+            if (e.target.matches('input[name="quantities[]"], input[name="unitPrices[]"]')) {
+                calculateTotal();
+            }
+        });
+
+        function calculateTotal() {
+            const quantities = [...document.getElementsByName('quantities[]')];
+            const unitPrices = [...document.getElementsByName('unitPrices[]')];
+            let total = 0;
+            
+            quantities.forEach((qty, index) => {
+                const quantity = parseFloat(qty.value) || 0;
+                const unitPrice = parseFloat(unitPrices[index].value) || 0;
+                total += quantity * unitPrice;
+            });
+            
+            // Optional: Display total somewhere if needed
+            console.log('Total Amount:', total);
+            return total;
+        }
+
+        function loadPreviousPFIs(userId, searchTerm = '') {
+            const pfiList = document.getElementById('pfiList');
+            const noResults = document.getElementById('noResults');
+            
+            if (!searchTerm) {
+                pfiList.classList.add('hidden');
+                noResults.classList.add('hidden');
+                return;
+            }
+
+            db.collection("users").doc(userId).collection("proformaInvoices")
+                .orderBy("createdAt", "desc")
+                .get()
+                .then((querySnapshot) => {
+                    pfiList.innerHTML = '';
+                    let hasResults = false;
+
+                    querySnapshot.forEach((doc) => {
+                        const pfi = doc.data();
+                        if (pfi.pfiNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            pfi.customerId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            pfi.billTo?.toLowerCase().includes(searchTerm.toLowerCase())) {
+                            
+                            hasResults = true;
+                            // Format stampDate
+                            const stampDate = pfi.stampDate ? new Date(pfi.stampDate).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            }) : 'N/A';
+                            
+                            const pfiItem = document.createElement('div');
+                            pfiItem.className = 'p-4 bg-white dark:bg-gray-700 rounded-md shadow flex justify-between items-center';
+                            pfiItem.innerHTML = `
+                                <div>
+                                    <h3 class="font-semibold">${pfi.pfiNumber}</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-300">Date: ${pfi.date}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-300">Stamp Date: ${stampDate}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-300">Customer: ${pfi.customerId || 'N/A'}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-300">Total: ${pfi.currency} ${pfi.totalAmount?.toFixed(2) || '0.00'}</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="downloadPDF('${doc.id}')" 
+                                            class="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                    <button onclick="viewPDF('${doc.id}')" 
+                                            class="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            `;
+                            pfiList.appendChild(pfiItem);
+                        }
+                    });
+
+                    pfiList.classList.toggle('hidden', !hasResults);
+                    noResults.classList.toggle('hidden', hasResults);
+                })
+                .catch((error) => {
+                    console.error("Error loading previous PFIs: ", error);
+                });
+        }
+
+        // Add these new functions for downloading and viewing PDFs
+        function downloadPDF(docId) {
+            db.collection("users").doc(firebase.auth().currentUser.uid)
+                .collection("proformaInvoices").doc(docId)
+                .get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        const queryString = new URLSearchParams(data).toString();
+                        const url = `pfi-template.html?${queryString}`;
+                        window.open(url, '_blank');
+                    }
+                });
+        }
+
+        function viewPDF(docId) {
+            downloadPDF(docId); // Reuse the download function for viewing
+        }
+
+        // Update the search functionality
+        document.getElementById('searchBtn').addEventListener('click', () => {
+            const user = firebase.auth().currentUser;
+            if (user) {
+                const searchTerm = document.getElementById('pfiSearch').value;
+                loadPreviousPFIs(user.uid, searchTerm);
+            }
+        });
+
+        // Add enter key support for search
+        document.getElementById('pfiSearch').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    const searchTerm = e.target.value;
+                    loadPreviousPFIs(user.uid, searchTerm);
+                }
+            }
+        });
+
+        function searchPFIs(userId) {
+            const searchTerm = document.getElementById('pfiSearch').value.toLowerCase();
+            db.collection("users").doc(userId).collection("proformaInvoices")
+                .orderBy("createdAt", "desc")
+                .get()
+                .then((querySnapshot) => {
+                    const pfiList = document.getElementById('pfiList');
+                    pfiList.innerHTML = '';
+                    querySnapshot.forEach((doc) => {
+                        const pfi = doc.data();
+                        if (pfi.pfiNumber.toLowerCase().includes(searchTerm) ||
+                            pfi.customerId.toLowerCase().includes(searchTerm) ||
+                            pfi.billTo.toLowerCase().includes(searchTerm) ||
+                            pfi.pfiNumber.split('/')[2].includes(searchTerm)) { // Search by number sequence
+                            const pfiItem = document.createElement('div');
+                            pfiItem.className = 'p-4 bg-white dark:bg-gray-700 rounded-md shadow';
+                            pfiItem.innerHTML = `
+                                <h3 class="font-semibold">${pfi.pfiNumber}</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-300">Date: ${pfi.date}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-300">Bill To: ${pfi.billTo}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-300">Total: ${pfi.currency} ${pfi.totalAmount.toFixed(2)}</p>
+                            `;
+                            pfiList.appendChild(pfiItem);
+                        }
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error searching PFIs: ", error);
+                });
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Add product row functionality
+        document.getElementById('addProduct').addEventListener('click', () => {
+            const template = document.querySelector('.product-item').cloneNode(true);
+            // Clear input values
+            template.querySelectorAll('input').forEach(input => input.value = '');
+            document.getElementById('productsList').appendChild(template);
+        });
+    </script>
+    <script>
+        const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+        if (prefersDarkScheme.matches) {
+            document.documentElement.classList.add("dark");
+        } else {
+            document.documentElement.classList.remove("dark");
+        }
+    </script>
+    <script>
+        // Persist user's theme preference
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+        } else {
+            // ...existing device preference code...
+            const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+            if (prefersDarkScheme.matches) {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        }
+    </script>
+</body>
+</html>
