@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Buyers - Sarura Petroleum</title>
+    <link rel="icon" href="logo.jpg" type="image/jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://kit.fontawesome.com/d00c9b568a.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-light': '#f5f5f5',
+                        'custom-dark': '#121212',
+                        'custom-accent': '#4ade80',
+                        'custom-accent-hover': '#22c55e',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .green-gradient {
+            background: linear-gradient(to right, #4ade80, #22c55e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .dark .glass-effect {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-custom-light dark:bg-custom-dark text-gray-800 dark:text-gray-200">
+    <div id="particles-js" class="fixed inset-0 z-0 pointer-events-none opacity-50"></div>
+
+    <!-- Header -->
+    <header class="glass-effect sticky top-0 z-50 border-b border-gray-200 dark:border-gray-700">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <!-- Removed id="home-button" from the logo link -->
+                <a href="dashboard.html" class="flex items-center">
+                    <img src="logo.jpg" alt="Logo" class="h-10 w-10 rounded-full border-2 border-custom-accent">
+                    <span class="ml-2 text-xl font-bold green-gradient">SARURA PETROLEUM</span>
+                </a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="toggle-theme" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i class="fas fa-adjust"></i>
+                </button>
+                <!-- Assigned id="home-button" to the back arrow button -->
+                <a href="procurement.html" id="home-button" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Buyers management content -->
+    <main class="container mx-auto px-4 py-8">
+        <h1 class="text-2xl font-bold mb-6">Manage Buyers</h1>
+
+        <!-- Buyers Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-gray-300 dark:border-gray-700">
+                        <th class="py-3 text-left dark:text-gray-200">Index</th>
+                        <th class="py-3 text-left dark:text-gray-200">Buyer Name</th>
+                        <th class="py-3 text-left dark:text-gray-200">Total Orders</th>
+                        <th class="py-3 text-left dark:text-gray-200">Pending Orders</th>
+                        <th class="py-3 text-left dark:text-gray-200">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="buyersTableBody">
+                    <!-- Buyers will be populated here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Add Order Modal -->
+        <div id="add-order-modal" class="modal">
+            <div class="modal-content glass-effect rounded-lg">
+                <!-- ...existing modal content... -->
+                <!-- Removed the 'add-order-form' -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Include Firebase and custom scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-auth-compat.js"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="managebuyer.js"></script>
+
+    <!-- Add script to apply user's theme preference -->
+    <script>
+        // Apply user's theme preference from localStorage
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Theme toggle functionality
+        const toggleTheme = document.getElementById('toggle-theme');
+        toggleTheme.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Initialize particles.js
+        particlesJS("particles-js", {
+            particles: {
+                number: { value: 80, density: { enable: true, value_area: 800 } },
+                color: { value: "#4ade80" },
+                shape: { type: "circle" },
+                opacity: { value: 0.5, random: false },
+                size: { value: 3, random: true },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: "#4ade80",
+                    opacity: 0.4,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 2,
+                    direction: "none",
+                    random: false,
+                    straight: false,
+                    out_mode: "out",
+                    bounce: false,
+                }
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: {
+                    onhover: { enable: true, mode: "repulse" },
+                    onclick: { enable: true, mode: "push" },
+                    resize: true
+                },
+            },
+            retina_detect: true
+        });
+
+        // Change Home button to Back arrow using unique ID
+        const homeButton = document.getElementById('home-button');
+        if (homeButton) {
+            homeButton.href = "procurement.html";
+            homeButton.innerHTML = '<i class="fas fa-arrow-left"></i>';
+        }
+
+        // Fetch and display orders in the table
+        function fetchAndDisplayOrders(companyId) {
+            db.collection('company').doc(companyId).collection('orders')
+                .onSnapshot(snapshot => {
+                    elements.ordersTableBody.innerHTML = ''; // Clear existing rows
+                    snapshot.forEach(doc => {
+                        const order = doc.data();
+                        const total = order.price * order.volume;
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${order.truckNumber}</td>
+                            <td>${order.product}</td>
+                            <td>${order.volume.toFixed(3)}</td>
+                            <td>${order.destination}</td>
+                            <td>${order.price.toFixed(3)}</td>
+                            <td>${total.toFixed(3)}</td>
+                            <td>${order.credit.toFixed(3)}</td>
+                            <td>${order.debitBalance.toFixed(3)}</td>
+                            <td>
+                                <button onclick="editOrder('${doc.id}')" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
+                                    Edit
+                                </button>
+                                <button onclick="deleteOrder('${doc.id}')" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                                    Delete
+                                </button>
+                            </td>
+                        `;
+                        elements.ordersTableBody.appendChild(row);
+                    });
+                }, error => {
+                    console.error("Error fetching orders:", error);
+                });
+        }
+    </script>
+</body>
+</html>
