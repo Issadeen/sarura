@@ -406,7 +406,10 @@
                 paymentTerms: form.paymentTerms.value,
                 products,
                 totalAmount,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                // Ensure createdAt is a valid ISO string
+                createdAt: new Date().toISOString(),
+                // Add stampDate field as ISO string
+                stampDate: new Date().toISOString()
             };
         }
 
@@ -416,24 +419,24 @@
                 // Create query parameters
                 const queryParams = new URLSearchParams();
                 
-                // Add basic fields
-                Object.keys(formData).forEach(key => {
-                    if (key === 'products') {
-                        queryParams.append(key, JSON.stringify(formData[key]));
-                    } else if (key === 'createdAt') {
-                        queryParams.append(key, new Date().toISOString());
-                    } else {
-                        queryParams.append(key, formData[key]);
-                    }
-                });
+                // Special handling for products array
+                if (formData.products && Array.isArray(formData.products)) {
+                    const productsStr = JSON.stringify(formData.products);
+                    queryParams.append('products', encodeURIComponent(productsStr));
+                }
 
-                // Open pfi-template.html in a new window and trigger download
+                // Add other fields
+                for (const [key, value] of Object.entries(formData)) {
+                    if (key !== 'products' && value !== undefined) {
+                        queryParams.append(key, encodeURIComponent(value.toString()));
+                    }
+                }
+
+                // Log the URL for debugging
+                console.log('Generated URL:', `pfi-template.html?${queryParams.toString()}`);
+
+                // Open template in new window
                 const newWindow = window.open(`pfi-template.html?${queryParams.toString()}`, '_blank');
-                newWindow.onload = () => {
-                    newWindow.document.body.onload = () => {
-                        newWindow.downloadPDF(); // Ensure downloadPDF is called after content loads
-                    };
-                };
             } catch (error) {
                 console.error("Error generating PDF:", error);
                 alert("Error generating PDF");
@@ -528,18 +531,39 @@
         }
 
         // Add these new functions for downloading and viewing PDFs
-        function downloadPDF(docId) {
-            db.collection("users").doc(firebase.auth().currentUser.uid)
-                .collection("proformaInvoices").doc(docId)
-                .get()
-                .then((doc) => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        const queryString = new URLSearchParams(data).toString();
-                        const url = `pfi-template.html?${queryString}`;
-                        window.open(url, '_blank');
+        async function downloadPDF(docId) {
+            const doc = await db.collection("users")
+                .doc(firebase.auth().currentUser.uid)
+                .collection("proformaInvoices")
+                .doc(docId)
+                .get();
+
+            if (doc.exists) {
+                const data = doc.data();
+                const queryParams = new URLSearchParams();
+
+                // Handle products array
+                if (data.products && Array.isArray(data.products)) {
+                    queryParams.append('products', JSON.stringify(data.products));
+                }
+
+                // Handle createdAt Timestamp
+                if (data.createdAt && data.createdAt.toDate) {
+                    queryParams.append('createdAt', data.createdAt.toDate().toISOString());
+                } else {
+                    queryParams.append('createdAt', new Date().toISOString());
+                }
+
+                // Add other fields
+                Object.entries(data).forEach(([key, value]) => {
+                    if (key !== 'products' && key !== 'createdAt') {
+                        queryParams.append(key, value?.toString() || '');
                     }
                 });
+
+                const url = `pfi-template.html?${queryParams.toString()}`;
+                window.open(url, '_blank');
+            }
         }
 
         function viewPDF(docId) {
