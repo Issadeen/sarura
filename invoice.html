@@ -316,7 +316,7 @@
                 const user = firebase.auth().currentUser;
                 if (user) {
                     await saveInvoiceData(user.uid);
-                    generatePDF();
+                    await generatePDF(); // Added await to ensure the function completes
                 }
             });
 
@@ -357,19 +357,27 @@
                 const year = new Date().getFullYear();
                 const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
                 
-                const snapshot = await db.collection("users").doc(userId)
-                    .collection("invoices")
-                    .where('invoice_number', '>=', `SAR/INV/${year}/${month}/0000`)
-                    .where('invoice_number', '<=', `SAR/INV/${year}/${month}/9999`)
-                    .orderBy('invoice_number', 'desc')
-                    .limit(1)
+                const snapshot = await db.collection('users')
+                    .doc(userId)
+                    .collection('invoices')
                     .get();
 
-                let nextNumber = '0001';
-                if (!snapshot.empty) {
-                    const lastInvoice = snapshot.docs[0].data().invoice_number;
-                    const lastNumber = parseInt(lastInvoice.split('/').pop());
-                    nextNumber = String(lastNumber + 1).padStart(4, '0');
+                let nextNumber;
+                if (snapshot.empty) {
+                    nextNumber = '0001';
+                } else {
+                    const invoices = snapshot.docs
+                        .map(doc => doc.data().invoice_number)
+                        .filter(num => num.startsWith(`SAR/INV/${year}/${month}/`))
+                        .sort();
+
+                    if (invoices.length === 0) {
+                        nextNumber = '0001';
+                    } else {
+                        const lastInvoice = invoices[invoices.length - 1];
+                        const lastNumber = parseInt(lastInvoice.split('/').pop());
+                        nextNumber = String(lastNumber + 1).padStart(4, '0');
+                    }
                 }
 
                 const newInvoiceNumber = `SAR/INV/${year}/${month}/${nextNumber}`;
@@ -377,6 +385,9 @@
                 return newInvoiceNumber;
             } catch (error) {
                 console.error("Error getting next Invoice number:", error);
+                // Provide a fallback invoice number
+                const year = new Date().getFullYear();
+                const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
                 return `SAR/INV/${year}/${month}/0001`;
             }
         }
@@ -397,19 +408,17 @@
 
         function getFormData() {
             const form = document.getElementById('invoiceForm');
-            const descriptions = [...document.getElementsByName('descriptions[]')].map(el => el.value);
-            const quantities = [...document.getElementsByName('quantities[]')].map(el => parseFloat(el.value) || 0);
-            const unitPrices = [...document.getElementsByName('unit_prices[]')].map(el => parseFloat(el.value) || 0);
-            const totals = [...document.getElementsByName('totals[]')].map(el => parseFloat(el.value) || 0);
+            
+            // Get all item entries
+            const itemEntries = document.querySelectorAll('.item-entry');
+            const items = Array.from(itemEntries).map(entry => ({
+                description: entry.querySelector('[name="descriptions[]"]').value,
+                quantity: parseFloat(entry.querySelector('[name="quantities[]"]').value) || 0,
+                unit_price: parseFloat(entry.querySelector('[name="unit_prices[]"]').value) || 0,
+                total: parseFloat(entry.querySelector('[name="totals[]"]').value) || 0
+            })).filter(item => item.description && item.quantity > 0 && item.unit_price > 0);
 
-            const items = descriptions.map((desc, i) => ({
-                description: desc,
-                quantity: quantities[i],
-                unit_price: unitPrices[i],
-                total: totals[i]
-            }));
-
-            const subtotal = totals.reduce((sum, val) => sum + val, 0);
+            const subtotal = items.reduce((sum, item) => sum + item.total, 0);
             const vat = subtotal * 0.16;
             const grandTotal = subtotal + vat;
 
@@ -419,14 +428,15 @@
                 due_date: form.due_date.value,
                 currency: form.currency.value,
                 customer_name: form.customer_name.value,
-                items,
-                subtotal,
-                vat,
+                items: items,
+                subtotal: subtotal,
+                vat: vat,
                 grand_total: grandTotal,
                 created_at: new Date().toISOString()
             };
         }
 
+        // Fix generatePDF to use items instead of products
         async function generatePDF() {
             const formData = getFormData();
             try {
@@ -434,12 +444,18 @@
                     invoice_number: formData.invoice_number,
                     date_issued: formData.date_issued,
                     customer_name: formData.customer_name,
-                    products: JSON.stringify(formData.products), // Ensure products are stringified
+                    currency: formData.currency,
+                    items: encodeURIComponent(JSON.stringify(formData.items)), // Properly encode the items
+                    subtotal: formData.subtotal,
+                    vat: formData.vat,
                     grand_total: formData.grand_total,
                     created_at: formData.created_at
                 };
                 
-                const queryString = new URLSearchParams(data).toString();
+                const queryString = Object.entries(data)
+                    .map(([key, value]) => `${key}=${value}`)
+                    .join('&');
+                    
                 window.open(`invoice-template.html?${queryString}`, '_blank');
             } catch (error) {
                 console.error("Error generating PDF:", error);
@@ -447,11 +463,10 @@
             }
         }
 
-        function addItemRow() {
             const template = document.querySelector('.item-entry').cloneNode(true);
             template.querySelectorAll('input').forEach(input => input.value = '');
             document.getElementById('itemsList').appendChild(template);
-        }
+        
 
         function handleItemInput(event) {
             if (event.target.matches('[name^="quantities"], [name^="unit_prices"]')) {
@@ -479,53 +494,97 @@
             document.getElementById('total_amount').value = totalAmount.toFixed(2);
         }
 
-        function loadPreviousInvoices(userId, searchTerm = '') {
-            const invoiceList = document.getElementById('invoiceList');
-            const noResults = document.getElementById('noResults');
-            
-            db.collection("users").doc(userId).collection("invoices")
-                .orderBy("created_at", "desc")
-                .get()
-                .then((querySnapshot) => {
-                    invoiceList.innerHTML = '';
-                    let hasResults = false;
+        async function loadPreviousInvoices(userId, searchTerm = '') {
+            try {
+                let query = db.collection("users").doc(userId).collection("invoices").orderBy("created_at", "desc");
 
-                    querySnapshot.forEach((doc) => {
-                        const invoice = doc.data();
-                        if (invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            invoice.customer_name.toLowerCase().includes(searchTerm.toLowerCase())) {
-                            
-                            hasResults = true;
-                            const invoiceItem = document.createElement('div');
-                            invoiceItem.className = 'p-4 bg-white dark:bg-gray-700 rounded-md shadow flex justify-between items-center';
-                            invoiceItem.innerHTML = `
-                                <div>
-                                    <h3 class="font-semibold">${invoice.invoice_number}</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-300">Date: ${invoice.date_issued}</p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-300">Customer: ${invoice.customer_name}</p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-300">Total: ${invoice.currency} ${invoice.grand_total.toFixed(2)}</p>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button onclick="downloadPDF('${doc.id}')" 
-                                            class="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2">
-                                        <i class="fas fa-download"></i>
-                                    </button>
-                                    <button onclick="viewPDF('${doc.id}')" 
-                                            class="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            `;
-                            invoiceList.appendChild(invoiceItem);
-                        }
-                    });
+                const snapshot = await query.get();
+                const invoiceList = document.getElementById('invoiceList');
+                const noResults = document.getElementById('noResults');
 
-                    invoiceList.classList.toggle('hidden', !hasResults);
-                    noResults.classList.toggle('hidden', hasResults);
-                })
-                .catch((error) => {
-                    console.error("Error loading previous invoices: ", error);
+                invoiceList.innerHTML = '';
+                if (snapshot.empty) {
+                    noResults.classList.remove('hidden');
+                    invoiceList.classList.add('hidden');
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const invoice = doc.data();
+                    // Only show invoice if it matches search term
+                    if (!searchTerm || 
+                        invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        invoice.customer_name.toLowerCase().includes(searchTerm.toLowerCase())) {
+                        
+                        const invoiceItem = document.createElement('div');
+                        invoiceItem.className = 'p-4 bg-white dark:bg-gray-700 rounded-md shadow flex justify-between items-center mb-2';
+                        invoiceItem.innerHTML = `
+                            <div>
+                                <h3 class="font-semibold">${invoice.invoice_number}</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-300">Date: ${formatDate(invoice.date_issued)}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-300">Customer: ${invoice.customer_name}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-300">Total: ${invoice.currency} ${invoice.grand_total.toFixed(2)}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="downloadPDF('${doc.id}')" 
+                                        class="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button onclick="viewPDF('${doc.id}')" 
+                                        class="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        `;
+                        invoiceList.appendChild(invoiceItem);
+                    }
                 });
+
+                const hasResults = invoiceList.children.length > 0;
+                invoiceList.classList.toggle('hidden', !hasResults);
+                noResults.classList.toggle('hidden', hasResults);
+            } catch (error) {
+                console.error("Error loading previous invoices:", error);
+                alert("Error loading invoices");
+            }
+        }
+
+        // Add formatDate helper function
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return 'N/A';
+            return date.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        function viewInvoice(invoiceId) {
+            db.collection("users").doc(firebase.auth().currentUser.uid)
+              .collection("invoices").doc(invoiceId)
+              .get()
+              .then(doc => {
+                  if (doc.exists) {
+                      const invoice = doc.data();
+                      const queryString = Object.entries(invoice)
+                          .map(([key, value]) => `${key}=${encodeURIComponent(JSON.stringify(value))}`)
+                          .join('&');
+                      window.open(`invoice-template.html?${queryString}`, '_blank');
+                  } else {
+                      alert("Invoice not found");
+                  }
+              })
+              .catch(error => {
+                  console.error("Error fetching invoice:", error);
+                  alert("Error fetching invoice");
+              });
+        }
+
+        function searchInvoices(userId) {
+            const searchTerm = document.getElementById('invoiceSearch').value.trim().toLowerCase();
+            loadPreviousInvoices(userId, searchTerm);
         }
 
         function downloadPDF(docId) {
@@ -534,21 +593,36 @@
                 .get()
                 .then((doc) => {
                     if (doc.exists) {
-                        const data = doc.data();
-                        // ...existing code...
-                        const queryString = new URLSearchParams(data).toString();
+                        const invoice = doc.data();
+                        const data = {
+                            invoice_number: invoice.invoice_number,
+                            date_issued: invoice.date_issued,
+                            customer_name: invoice.customer_name,
+                            currency: invoice.currency,
+                            items: encodeURIComponent(JSON.stringify(invoice.items)),
+                            subtotal: invoice.subtotal,
+                            vat: invoice.vat,
+                            grand_total: invoice.grand_total,
+                            created_at: invoice.created_at
+                        };
+
+                        const queryString = Object.entries(data)
+                            .map(([key, value]) => `${key}=${value}`)
+                            .join('&');
+                        
                         window.open(`invoice-template.html?${queryString}`, '_blank');
+                    } else {
+                        alert("Invoice not found");
                     }
+                })
+                .catch(error => {
+                    console.error("Error fetching invoice:", error);
+                    alert("Error fetching invoice");
                 });
         }
 
         function viewPDF(docId) {
             downloadPDF(docId); // Reuse the download function for viewing
-        }
-
-        function searchInvoices(userId) {
-            const searchTerm = document.getElementById('invoiceSearch').value.trim().toLowerCase();
-            loadPreviousInvoices(userId, searchTerm);
         }
     </script>
 </body>
