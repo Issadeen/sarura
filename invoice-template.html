@@ -21,6 +21,7 @@
             max-width: 210mm;  /* A4 width */
             margin: 0 auto;
             padding: 0;
+            min-height: auto; /* Remove display: flex and align-items: center to prevent centering */
         }
         .invoice {
             width: 100%;
@@ -196,7 +197,8 @@
                 background: none;
                 margin: 0;
                 height: auto;  /* Allow content to determine height */
-                min-height: 297mm;
+                min-height: 0;  /* Remove minimum height */
+                display: block;  /* Ensure block display */
             }
             .invoice {
                 box-shadow: none;
@@ -253,6 +255,12 @@
             .wave, .extra-content {
                 display: none;
             }
+            .page-container {
+                margin: 0;  /* Remove any margins */
+                padding: 0;
+                box-shadow: none;
+                border-radius: 0;
+            }
         }
 
         /* Add before existing styles */
@@ -272,7 +280,7 @@
                         0 1px 3px rgba(0, 0, 0, 0.08);
             transition: transform 0.2s ease;
             width: 210mm;  /* A4 width */
-            margin: 2rem auto;
+            margin: 0 auto;  /* Remove top/bottom margin */
             position: relative;
             overflow: hidden;
         }
@@ -378,7 +386,8 @@
             }
         }
 
-        /* Add media queries for mobile devices */
+        /* Remove all responsive media queries */
+        /*
         @media (max-width: 600px) {
             .header h1 {
                 font-size: 24px;
@@ -400,12 +409,7 @@
                 box-shadow: none;
             }
         }
-
-        @media print {
-            .page-container {
-                box-shadow: none;
-            }
-        }
+        */
     </style>
     <!-- Include QR code library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -517,16 +521,23 @@
         function getInvoiceData() {
             const params = new URLSearchParams(window.location.search);
             const data = {};
+            
             for (const [key, value] of params) {
-                if (key === 'products') {
-                    try {
-                        data[key] = JSON.parse(value);
-                    } catch (e) {
-                        console.error("Error parsing products data:", e);
-                        data[key] = [];
+                try {
+                    if (key === 'items') {
+                        // First decode the URI component, then parse as JSON
+                        const decodedValue = decodeURIComponent(value);
+                        data[key] = JSON.parse(decodedValue);
+                    } else {
+                        data[key] = decodeURIComponent(value);
                     }
-                } else {
-                    data[key] = decodeURIComponent(value);
+                } catch (e) {
+                    console.error(`Error parsing ${key}:`, e);
+                    if (key === 'items') {
+                        data[key] = [];
+                    } else {
+                        data[key] = value;
+                    }
                 }
             }
             return data;
@@ -534,60 +545,49 @@
 
         function populateInvoice() {
             const data = getInvoiceData();
+            console.log('Parsed invoice data:', data); // Add debugging
             
-            // Match IDs exactly with the HTML elements
+            // Basic invoice details
             document.getElementById('invoice_number').textContent = data.invoice_number || 'N/A';
             document.getElementById('date_issued').textContent = formatDate(data.date_issued) || 'N/A';
             document.getElementById('customer_name').textContent = data.customer_name || 'N/A';
-            document.getElementById('grand_total').textContent = data.grand_total || 'N/A';
+            document.getElementById('grand_total').textContent = 
+                `${data.currency || 'KES'} ${parseFloat(data.grand_total).toFixed(2)}`;
 
             // Populate items table
             const itemsTable = document.getElementById('itemsTable');
             itemsTable.innerHTML = ''; // Clear existing content
             
-            if (data.products && Array.isArray(data.products)) {
-                data.products.forEach((product, index) => {
+            if (data.items && Array.isArray(data.items)) {
+                data.items.forEach((item, index) => {
                     const row = document.createElement('tr');
-                    row.classList.add('product-row');
                     row.innerHTML = `
                         <td>${index + 1}</td>
-                        <td>${product.description || 'N/A'}</td>
-                        <td>${product.quantity || '0'}</td>
-                        <td>${product.unit_price || 'N/A'}</td>
-                        <td>${product.total || 'N/A'}</td>
+                        <td>${item.description || 'N/A'}</td>
+                        <td>${item.quantity || '0'}</td>
+                        <td>${data.currency} ${item.unit_price ? parseFloat(item.unit_price).toFixed(2) : '0.00'}</td>
+                        <td>${data.currency} ${item.total ? parseFloat(item.total).toFixed(2) : '0.00'}</td>
                     `;
                     itemsTable.appendChild(row);
                 });
             } else {
                 const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="5">No items available.</td>`;
+                row.innerHTML = '<td colspan="5" class="text-center">No items available</td>';
                 itemsTable.appendChild(row);
             }
 
-            // Generate QR code with verification details
+            // Generate Verification ID and set details
             const verificationId = generateVerificationId(data);
-            const verificationUrl = `https://sarurapetroleumltd.com/verify.html?id=${verificationId}`;
-            
+            const generationTime = new Date().toISOString();
+            document.getElementById('documentRef').textContent = verificationId;
+            document.getElementById('generationTime').textContent = formatDateTime(generationTime);
+
+            // Generate QR code
+            const verificationUrl = `${window.location.origin}/verify.html?docId=${verificationId}`;
             generateQRCode(verificationUrl).then(() => {
-                // Set verification text
-                document.getElementById('documentRef').textContent = data.invoice_number || 'N/A';
-                document.getElementById('generationTime').textContent = formatDateTime(data.created_at) || 'N/A';
-                
-                // Add a personal thank-you message to the footer
-                const footer = document.querySelector('.footer');
-                const thankYouMessage = document.createElement('p');
-                thankYouMessage.textContent = 'Thank you for your business!';
-                thankYouMessage.style.fontStyle = 'italic';
-                thankYouMessage.style.textAlign = 'center';
-                thankYouMessage.style.marginTop = '15px';
-                footer.appendChild(thankYouMessage);
-                
-                // Replace window.print() with PDF download
-                downloadPDF();
+                console.log('QR Code generated successfully');
             }).catch((error) => {
-                console.error("Error generating QR Code:", error);
-                // Optionally, you can still trigger PDF download even if QR code fails
-                downloadPDF();
+                console.error('Error generating QR Code:', error);
             });
         }
 
@@ -612,7 +612,9 @@
 
         function formatDate(dateString) {
             if (!dateString) return 'N/A';
-            return new Date(dateString).toLocaleDateString('en-GB', {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return 'N/A';
+            return date.toLocaleDateString('en-GB', {
                 day: '2-digit',
                 month: 'short',
                 year: 'numeric'
@@ -676,6 +678,12 @@
 
         window.onload = function() {
             populateInvoice();
+            downloadPDF(); <!-- Ensure this line is uncommented -->
+        }
+
+        function getNextInvoiceNumber() {
+            const year = new Date().getFullYear(); // Define the 'year' variable
+            // ...existing code...
         }
     </script>
     <img src="logo.jpg" alt="Logo" class="preload-image" crossorigin="anonymous" style="display: none;">
