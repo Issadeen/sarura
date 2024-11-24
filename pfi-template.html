@@ -491,7 +491,6 @@
                         <img src="stamp.png" alt="Official Stamp" class="stamp-image">
                         <div class="stamp-date" id="stampDate"></div>
                     </div>
-                    <!-- Move QR Code here -->
                     <div id="qrCode" style="position: absolute; top: 10px; right: 10px; width: 100px; height: 100px;"></div>
                 </div>
             </div>
@@ -500,33 +499,56 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         function getPFIData() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const data = {};
+        
+        for (const [key, value] of params.entries()) {
             try {
-                const params = new URLSearchParams(window.location.search);
-                const data = {};
-                
-                // Convert URLSearchParams to object
-                for (const [key, value] of params.entries()) {
-                    try {
-                        // Try to parse as JSON (for arrays/objects)
+                switch(key) {
+                    case 'products':
+                        // Parse products array
                         data[key] = JSON.parse(value);
-                    } catch (e) {
-                        // If not JSON, use raw value
+                        if (!Array.isArray(data[key])) {
+                            console.warn('Products is not an array, defaulting to empty array');
+                            data[key] = [];
+                        }
+                        break;
+                        
+                    case 'totalAmount':
+                        data[key] = parseFloat(value) || 0;
+                        break;
+                        
+                    case 'createdAt':
+                    case 'stampDate':
+                        // Handle dates
+                        const date = new Date(value);
+                        data[key] = !isNaN(date.getTime()) ? 
+                            date.toISOString() : 
+                            new Date().toISOString();
+                        break;
+                        
+                    default:
                         data[key] = value;
-                    }
                 }
-
-                // Validate required fields
-                if (!data.pfiNumber || !data.products) {
-                    throw new Error('Missing required fields');
-                }
-
-                return data;
-            } catch (error) {
-                console.error('Error parsing PFI data:', error);
-                showError('Invalid or incomplete PFI data');
-                return null;
+            } catch (e) {
+                console.error(`Error parsing ${key}:`, e);
+                // Set default values for required fields
+                if (key === 'products') data[key] = [];
+                if (key === 'totalAmount') data[key] = 0;
+                if (key.includes('date')) data[key] = new Date().toISOString();
             }
         }
+
+        console.log('Final parsed data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error parsing PFI data:', error);
+        return null;
+    }
+}
+
+// ...existing code...
 
         function ensureQRCodeElement() {
             let qrElement = document.getElementById('qrCode');
@@ -545,77 +567,59 @@
 
         function populatePFI() {
             const data = getPFIData();
+            console.log('PopulatePFI received data:', data);
+            
             if (!data) return;
 
             try {
-                // Populate fields with null checks
+                // Basic fields population
                 document.getElementById('pfiNo').textContent = data.pfiNumber || 'N/A';
-                document.getElementById('date').textContent = formatDate(data.date) || 'N/A';
+                document.getElementById('date').textContent = data.date || 'N/A';
                 document.getElementById('customer').textContent = data.billTo || 'N/A';
                 document.getElementById('transport').textContent = data.shipTo || 'N/A';
 
-                // Populate products table
+                // Products table population with additional validation
                 const productsTable = document.getElementById('productsTable');
-                productsTable.innerHTML = ''; // Clear existing content
+                productsTable.innerHTML = '';
 
-                if (data.products && Array.isArray(data.products)) {
+                if (Array.isArray(data.products) && data.products.length > 0) {
                     data.products.forEach((product, index) => {
-                        const row = document.createElement('tr');
-                        row.classList.add('product-row');
-                        row.innerHTML = `
-                            <td>${index + 1}</td>
-                            <td>${product.description || 'N/A'}</td>
-                            <td>${product.hsCode || 'N/A'}</td>
-                            <td>${product.quantity || '0'}</td>
-                            <td>${product.unitPrice || '0.00'}</td>
-                            <td>${product.amount || '0.00'}</td>
-                        `;
-                        productsTable.appendChild(row);
+                        if (product && typeof product === 'object') {
+                            const row = document.createElement('tr');
+                            const amount = ((product.quantity || 0) * (product.unitPrice || 0)).toFixed(2);
+                            row.innerHTML = `
+                                <td>${index + 1}</td>
+                                <td>${product.description || 'N/A'}</td>
+                                <td>${product.hsCode || 'N/A'}</td>
+                                <td>${product.quantity || '0'}</td>
+                                <td>${parseFloat(product.unitPrice || 0).toFixed(2)}</td>
+                                <td>${amount}</td>
+                            `;
+                            productsTable.appendChild(row);
+                        }
                     });
                 } else {
+                    console.warn('No valid products data found');
                     const row = document.createElement('tr');
-                    row.innerHTML = `<td colspan="6">No products available.</td>`;
+                    row.innerHTML = '<td colspan="6" style="text-align: center;">No products available</td>';
                     productsTable.appendChild(row);
                 }
 
-                // Update total
-                document.getElementById('total').textContent = `${data.totalAmount || '0.00'} ${data.currency || ''}`;
+                // Update total with proper formatting
+                const total = data.totalAmount ? parseFloat(data.totalAmount).toFixed(2) : '0.00';
+                document.getElementById('total').textContent = `${total} ${data.currency || 'USD'}`;
 
-                // Add stamp date from data
-                if (data.stampDate) {
-                    const stampDate = new Date(data.stampDate).toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                    });
-                    document.getElementById('stampDate').textContent = stampDate;
-                } else {
-                    const today = new Date().toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                    });
-                    document.getElementById('stampDate').textContent = today;
-                }
+                // Set stamp date
+                document.getElementById('stampDate').textContent = formatDate(data.stampDate);
 
-                // Generate QR code with correct verification URL format
-                const verificationId = generateVerificationId(data);
-                generateQRCode(verificationId); // Just pass the ID, URL is constructed in generateQRCode
+                // Generate QR code
+                generateQRCode(generateVerificationId(data));
 
-                // Add a personal thank-you message to the footer
-                const footer = document.querySelector('.footer');
-                const thankYouMessage = document.createElement('p');
-                thankYouMessage.textContent = 'Thank you for choosing Sarura Petroleum!';
-                thankYouMessage.style.fontStyle = 'italic';
-                thankYouMessage.style.textAlign = 'center';
-                thankYouMessage.style.marginTop = '15px';
-                footer.appendChild(thankYouMessage);
-
-                // Trigger PDF download after QR code is generated
+                // Auto-download PDF
                 downloadPDF();
+
             } catch (error) {
-                console.error('Error populating PFI:', error);
-                showError('Error displaying PFI data');
+                console.error('Error in populatePFI:', error);
             }
         }
 
