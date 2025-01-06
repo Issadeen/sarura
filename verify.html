@@ -72,6 +72,46 @@
             right: 10px;
             top: 10px;
         }
+        /* Add to existing styles */
+        .verification-result {
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .verification-result h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .verification-result.valid {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .verification-result.invalid {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .verification-result p {
+            margin: 0.5rem 0;
+        }
+
+        .verification-result strong {
+            font-weight: 600;
+        }
+
+        #documentDetails {
+            background-color: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -89,57 +129,95 @@
             verifyDocument();
         }
 
-        function verifyDocument() {
-            const params = new URLSearchParams(window.location.search);
-            const docId = params.get('id');
+        async function verifyDocument() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const docId = params.get('id');
 
-            if (!docId) {
-                showError('No document ID provided.');
-                return;
+                if (!docId) {
+                    showError('No document ID provided.');
+                    return;
+                }
+
+                // Parse document type from ID
+                const [prefix, type, ...rest] = docId.split('-');
+                if (prefix !== 'SP') {
+                    showError('Invalid document format.');
+                    return;
+                }
+
+                // Construct verification URL
+                const apiUrl = `https://sarurapetroleumltd.com/api/verify/${docId}`;
+                
+                // First try to get from local storage (for offline verification)
+                const cachedDoc = localStorage.getItem(docId);
+                if (cachedDoc) {
+                    displaySuccess(JSON.parse(cachedDoc));
+                    return;
+                }
+
+                // If not in cache, try to fetch from server
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error('Verification failed');
+                }
+
+                const data = await response.json();
+                if (data.isValid) {
+                    // Cache the result
+                    localStorage.setItem(docId, JSON.stringify(data));
+                    displaySuccess(data);
+                } else {
+                    showError('Document verification failed.');
+                }
+            } catch (error) {
+                console.error('Verification error:', error);
+                showError('Unable to verify document. Please try again later.');
             }
-
-            // Updated verification endpoint
-            fetch(`https://sarurapetroleumltd.com/api/verify/${docId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.isValid) {
-                        displaySuccess(data);
-                    } else {
-                        showError('Invalid or expired document.');
-                    }
-                })
-                .catch(() => {
-                    showError('Verification service is unavailable.');
-                });
         }
 
         function displaySuccess(data) {
             const verificationResult = document.getElementById('verificationResult');
             verificationResult.className = 'verification-result valid';
+            
+            // Format the document type for display
+            const documentType = getDocumentType(data.type);
+            const verifiedAt = formatDateTime(new Date().getTime());
+            const issuedOn = formatDateTime(new Date(data.issuedOn).getTime());
+
             verificationResult.innerHTML = `
-                <h3>✓ Verification Successful</h3>
-                <p>Document Type: ${getDocumentType(data.type)}</p>
-                <p>Issued On: ${formatDateTime(data.issuedOn)}</p>
-                <p>Verified At: ${formatDateTime(data.verifiedAt)}</p>
-                <!-- Ensure QR Code container exists -->
-                <div id="qrCode"></div>
+                <h3>✓ Document Verified</h3>
+                <div class="mt-4">
+                    <p><strong>Document Type:</strong> ${documentType}</p>
+                    <p><strong>Document Number:</strong> ${data.documentNumber}</p>
+                    <p><strong>Issued On:</strong> ${issuedOn}</p>
+                    <p><strong>Verified At:</strong> ${verifiedAt}</p>
+                    ${data.customerName ? `<p><strong>Customer:</strong> ${data.customerName}</p>` : ''}
+                </div>
             `;
-            generateQRCode(data);
+
+            // Also update the document details section
+            const documentDetails = document.getElementById('documentDetails');
+            documentDetails.style.display = 'block';
+            documentDetails.innerHTML = `
+                <h4 class="text-lg font-semibold mb-2">Additional Information</h4>
+                <p>This document was issued by Sarura Petroleum Ltd and is electronically verified.</p>
+                <p>Verification ID: ${data.verificationId || data.id}</p>
+                <p class="mt-2 text-sm text-gray-600">For any queries, please contact us at +254 708 108227</p>
+            `;
         }
 
-        function generateQRCode(data) {
-            const qrElement = document.getElementById('qrCode');
-            if (qrElement) {
-                // QR code generation logic
-                qrElement.innerHTML = `<!-- QR Code generated based on ${JSON.stringify(data)} -->`;
-            } else {
-                console.error('QR code element not found.');
-                showError('Failed to generate QR Code.');
-            }
+        function getDocumentType(type) {
+            const types = {
+                'PFI': 'Pro Forma Invoice',
+                'INV': 'Invoice',
+                'DN': 'Delivery Note'
+            };
+            return types[type] || 'Unknown Document';
         }
 
         function formatDateTime(timestamp) {
-            return new Date(parseInt(timestamp)).toLocaleString('en-GB', {
+            return new Date(timestamp).toLocaleString('en-GB', {
                 day: '2-digit',
                 month: 'short',
                 year: 'numeric',
@@ -148,22 +226,23 @@
             });
         }
 
-        function getDocumentType(type) {
-            const types = {
-                'pfi': 'Pro Forma Invoice',
-                'inv': 'Invoice',
-                'del': 'Delivery Note'
-            };
-            return types[type.toLowerCase()] || 'Unknown Document';
-        }
-
         function showError(message) {
             const verificationResult = document.getElementById('verificationResult');
             verificationResult.className = 'verification-result invalid';
             verificationResult.innerHTML = `
                 <h3>✗ Verification Failed</h3>
                 <p>${message}</p>
+                <p class="mt-2">Please ensure you:</p>
+                <ul class="mt-1 list-disc list-inside">
+                    <li>Scanned the correct QR code</li>
+                    <li>Have a stable internet connection</li>
+                    <li>Are using the correct verification link</li>
+                </ul>
+                <p class="mt-2">For assistance, contact us at +254 708 108227</p>
             `;
+            
+            // Hide the details section when showing an error
+            document.getElementById('documentDetails').style.display = 'none';
         }
 
         function downloadPDF() {
