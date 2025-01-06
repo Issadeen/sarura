@@ -507,29 +507,39 @@
             try {
                 switch(key) {
                     case 'products':
-                        // Parse products array
-                        data[key] = JSON.parse(value);
+                        // Decode and parse products array
+                        const decodedProducts = decodeURIComponent(value);
+                        data[key] = JSON.parse(decodedProducts);
                         if (!Array.isArray(data[key])) {
                             console.warn('Products is not an array, defaulting to empty array');
                             data[key] = [];
                         }
                         break;
                         
+                    case 'pfiNumber':
+                    case 'billTo':
+                    case 'shipTo':
+                    case 'customerId':
+                        // Decode URL-encoded strings
+                        data[key] = decodeURIComponent(value);
+                        break;
+                        
                     case 'totalAmount':
-                        data[key] = parseFloat(value) || 0;
+                        data[key] = parseFloat(decodeURIComponent(value)) || 0;
                         break;
                         
                     case 'createdAt':
                     case 'stampDate':
                         // Handle dates
-                        const date = new Date(value);
+                        const decodedDate = decodeURIComponent(value);
+                        const date = new Date(decodedDate);
                         data[key] = !isNaN(date.getTime()) ? 
                             date.toISOString() : 
                             new Date().toISOString();
                         break;
                         
                     default:
-                        data[key] = value;
+                        data[key] = decodeURIComponent(value);
                 }
             } catch (e) {
                 console.error(`Error parsing ${key}:`, e);
