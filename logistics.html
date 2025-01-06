@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logistics Dashboard - Sarura Petroleum</title>
+    <link rel="icon" href="logo.jpg" type="image/jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-light': '#f5f5f5',
+                        'custom-dark': '#121212',
+                        'custom-accent': '#4ade80',
+                        'custom-accent-hover': '#22c55e',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://kit.fontawesome.com/d00c9b568a.js" crossorigin="anonymous"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-auth-compat.js"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <style>
+        .green-gradient {
+            background: linear-gradient(to right, #4ade80, #22c55e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .float { animation: float 3s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-custom-light dark:bg-custom-dark text-gray-800 dark:text-gray-200 min-h-screen flex flex-col transition-colors duration-300">
+    <div id="particles-js" class="fixed inset-0 z-0"></div>
+
+    <!-- Header -->
+    <header class="bg-white bg-opacity-30 dark:bg-black dark:bg-opacity-30 backdrop-filter backdrop-blur-lg sticky top-0 z-10 shadow-lg">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="logo.jpg" alt="Sarura Petroleum Logo" class="h-10 w-10 mr-2 rounded-full border-2 border-custom-accent animate-pulse-slow">
+                <h1 class="text-2xl font-bold green-gradient">SARURA PETROLEUM</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="toggle-theme" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300">
+                    <i class="fas fa-adjust"></i>
+                </button>
+                <button onclick="window.location.href='dashboard.html'" class="text-gray-800 dark:text-gray-200 hover:text-custom-primary transition-colors duration-300">
+                    <i class="fas fa-home"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <h2 class="text-3xl font-bold mb-6 text-center green-gradient">Logistics Dashboard</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Trucks -->
+            <a href="trucks.html" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-105 float">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold">Trucks</h3>
+                    <i class="fas fa-truck text-3xl text-custom-accent"></i>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400">Manage and view all trucks</p>
+            </a>
+
+            <!-- Add Trucks -->
+            <a href="add-trucks.html" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-105 float">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold">Add Trucks</h3>
+                    <i class="fas fa-plus-circle text-3xl text-custom-accent"></i>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400">Add new trucks to the fleet</p>
+            </a>
+
+            <!-- Reports -->
+            <a href="reports.html" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-105 float">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold">Reports</h3>
+                    <i class="fas fa-chart-bar text-3xl text-custom-accent"></i>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400">View and analyze reports</p>
+            </a>
+
+            <!-- Add Reports -->
+            <a href="add-reports.html" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-105 float">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold">Add Reports</h3>
+                    <i class="fas fa-file-alt text-3xl text-custom-accent"></i>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400">Create new reports</p>
+            </a>
+
+            <!-- Shortages -->
+            <a href="shortages.html" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-105 float">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold">Shortages</h3>
+                    <i class="fas fa-exclamation-triangle text-3xl text-custom-accent"></i>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400">Monitor and manage shortages</p>
+            </a>
+
+            <!-- Quick Stats -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 float">
+                <h3 class="text-xl font-semibold mb-4">Quick Stats</h3>
+                <ul class="space-y-2">
+                    <li class="flex justify-between">
+                        <span>Total Trucks:</span>
+                        <span id="total-trucks" class="font-semibold">Loading...</span>
+                    </li>
+                    <li class="flex justify-between">
+                        <span>Active Reports:</span>
+                        <span id="active-reports" class="font-semibold">Loading...</span>
+                    </li>
+                    <li class="flex justify-between">
+                        <span>Current Shortages:</span>
+                        <span id="current-shortages" class="font-semibold">Loading...</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white bg-opacity-30 dark:bg-black dark:bg-opacity-30 backdrop-filter backdrop-blur-lg py-4">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2024 Sarura Petroleum. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Theme toggle functionality
+        const toggleThemeButton = document.getElementById('toggle-theme');
+        toggleThemeButton.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Set theme on load
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+        });
+
+        // Particle.js configuration
+        particlesJS("particles-js", {
+            particles: {
+                number: { value: 80, density: { enable: true, value_area: 800 } },
+                color: { value: "#4ade80" },
+                shape: { type: "circle" },
+                opacity: { value: 0.5, random: false, anim: { enable: false } },
+                size: { value: 3, random: true, anim: { enable: false } },
+                line_linked: { enable: true, distance: 150, color: "#4ade80", opacity: 0.4, width: 1 },
+                move: { enable: true, speed: 2, direction: "none", random: false, straight: false, out_mode: "out", bounce: false }
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: { onhover: { enable: true, mode: "repulse" }, onclick: { enable: true, mode: "push" }, resize: true },
+                modes: { repulse: { distance: 100, duration: 0.4 }, push: { particles_nb: 4 } }
+            },
+            retina_detect: true
+        });
+
+        // Simulated data loading (replace with actual data fetching in a real application)
+        setTimeout(() => {
+            document.getElementById('total-trucks').textContent = '42';
+            document.getElementById('active-reports').textContent = '15';
+            document.getElementById('current-shortages').textContent = '3';
+        }, 1500);
+
+        // User menu functionality (placeholder)
+        document.getElementById('user-menu').addEventListener('click', () => {
+            alert('User menu clicked. Implement user menu functionality here.');
+        });
+    </script>
+</body>
+</html>

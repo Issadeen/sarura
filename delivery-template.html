@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Note - Sarura Petroleum</title>
+    <style>
+        @page { size: A4 portrait; margin: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; box-sizing: border-box; background: white; overflow-x: hidden; max-width: 210mm; }
+        .invoice { width: 210mm; padding: 10mm; margin: 0; background-color: white; box-shadow: none; border-radius: 10px; position: relative; z-index: 1; overflow: hidden; box-sizing: border-box; }
+        .header { text-align: center; margin-bottom: 15px; position: relative; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; padding-top: 50px; }
+        .logo { position: absolute; top: 0; width: 60px; height: auto; }
+        .logo-left { left: 0; }
+        .logo-right { right: 0; }
+        .header h1 { color: #2e7d32; font-size: 28px; margin: 20px 0; }
+        .header p { margin: 3px 0; font-size: 0.9em; }
+        .header p:first-of-type { color: #2e7d32; font-weight: normal; }
+        .info { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 8px; padding: 8px; background: #f9f9f9; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; background: white; font-size: 0.85em; table-layout: fixed; word-break: break-word; }
+        th { background-color: #4CAF50; color: white; padding: 4px 6px; font-weight: 600; font-size: 0.95em; border: 1px solid #2e7d32; }
+        td { padding: 4px 6px; border: 1px solid #e0e0e0; font-size: 0.9em; overflow: hidden; text-overflow: ellipsis; }
+        .footer { margin-top: 10px; position: relative; padding-bottom: 0; font-size: 0.8em; }
+        .footer p { margin: 5px 0; line-height: 1.3; }
+        .verification-section { margin-top: 20px; border-top: 2px solid #4CAF50; padding-top: 15px; }
+        .verification-box { background-color: #f8f8f8; border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin-bottom: 20px; }
+        .verification-content { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: center; }
+        .verification-text { font-size: 0.9em; color: #333; line-height: 1.5; }
+        .verification-text strong { color: #2e7d32; display: block; margin-bottom: 5px; }
+        .verification-details { font-size: 0.8em; color: #666; margin-top: 10px; }
+        .qr-box { display: flex; justify-content: center; align-items: center; background: white; padding: 10px; border: 1px solid #eee; border-radius: 4px; }
+        #qrCode { width: 100px; height: 100px; }
+        @media print { body { width: 210mm; height: 297mm; margin: 0; padding: 0; overflow: hidden; } .invoice { box-shadow: none; height: auto; min-height: 297mm; padding: 10mm; margin: 0; page-break-inside: avoid; overflow: hidden; } .header, .info, .footer, .verification-section { margin: 0 !important; padding: 5mm !important; } .footer { padding-bottom: 1cm; } th { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background-color: #4CAF50 !important; color: white !important; border: 1px solid #2e7d32 !important; } * { page-break-inside: avoid; margin-bottom: 0; padding-bottom: 0; } .wave, .extra-content { display: none; } .stamp-image { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } .stamp-date { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color: #ff0000 !important; } .verification-section { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; page-break-inside: avoid; } .verification-box { background-color: #f8f8f8 !important; border: 1px solid #ddd !important; } .verification-text strong { color: #2e7d32 !important; } #qrCode img { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
+        @media (max-width: 600px) { .header h1 { font-size: 24px; } .info { grid-template-columns: 1fr; gap: 15px; } table, th, td { font-size: 0.8em; } .footer p { font-size: 0.7em; } }
+    </style>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: #f0f2f5;
+            min-height: 100vh;
+        }
+
+        .invoice {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: 0;
+            background: white;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        @media print {
+            body {
+                background: none;
+                display: block;
+                margin: 0;
+                padding: 0;
+            }
+
+            .invoice {
+                margin: 0;
+                padding: 15mm;
+                width: 210mm;
+                min-height: 297mm;
+                box-shadow: none;
+                page-break-after: always;
+            }
+
+            #downloadButton {
+                display: none;
+            }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+    <div id="invoice-content" class="invoice">
+        <!-- Removed watermark div -->
+        <div class="header">
+            <img src="logo.jpg" alt="Left Logo" class="logo logo-left" crossorigin="anonymous">
+            <img src="logo.jpg" alt="Right Logo" class="logo logo-right" crossorigin="anonymous">
+            <h1>DELIVERY NOTE</h1>
+            <p class="slogan">"Delivering Excellence with Every Drop"</p>
+            <p>SARURA PETROLEUM LTD</p>
+            <p>Dealers in: Petroleum products and transportation.</p>
+            <p>KPC SHIPPERS ANNEX ELDORET.</p>
+            <p>P. O BOX 7180 -30100 ELDORET (K)</p>
+            <p>TEL: +254 708 108227</p>
+        </div>
+
+        <div class="info">
+            <div>
+                <p>DELIVERY NOTE NO: <span id="delivery_number"></span></p>
+                <p>DATE: <span id="date_issued"></span></p>
+            </div>
+            <div>
+                <p>RECEIVER: <span id="receiver_name"></span></p>
+            </div>
+        </div>
+
+        <table>
+            <tr>
+                <th>NO:</th>
+                <th>DESCRIPTION</th>
+                <th>QUANTITY</th>
+                <th>UNIT</th>
+            </tr>
+            <tbody id="itemsTable"></tbody>
+        </table>
+
+        <div class="verification-section">
+            <div class="verification-box">
+                <div class="verification-content">
+                    <div class="verification-text">
+                        <strong>Verification:</strong>
+                        <p>This document can be verified by scanning the QR code.</p>
+                        <p>Delivery Note No: <span id="verification_delivery_number"></span></p>
+                        <p>Date Issued: <span id="verification_date_issued"></span></p>
+                    </div>
+                    <div class="qr-box">
+                        <div id="qrCode"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p style="font-style: italic; text-align: center; margin-top: 15px;">Your satisfaction is our priority!</p>
+        </div>
+    </div>
+
+    <button id="downloadButton" onclick="downloadPDF()" style="display: none;">Download PDF</button>
+
+    <script>
+        function getDeliveryData() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const data = {};
+                
+                for (const [key, value] of params.entries()) {
+                    try {
+                        switch(key) {
+                            case 'products':
+                                // Decode and parse products array
+                                const decodedProducts = decodeURIComponent(value);
+                                data[key] = JSON.parse(decodedProducts);
+                                if (!Array.isArray(data[key])) {
+                                    console.warn('Products is not an array, defaulting to empty array');
+                                    data[key] = [];
+                                }
+                                break;
+                                
+                            case 'delivery_number':
+                            case 'receiver_name':
+                                // Decode URL-encoded strings
+                                data[key] = decodeURIComponent(value);
+                                break;
+                                
+                            case 'date_issued':
+                            case 'created_at':
+                                // Handle dates
+                                const decodedDate = decodeURIComponent(value);
+                                const date = new Date(decodedDate);
+                                data[key] = !isNaN(date.getTime()) ? 
+                                    date.toISOString() : 
+                                    new Date().toISOString();
+                                break;
+                                
+                            default:
+                                data[key] = decodeURIComponent(value);
+                        }
+                    } catch (e) {
+                        console.error(`Error parsing ${key}:`, e);
+                        if (key === 'products') data[key] = [];
+                        if (key.includes('date')) data[key] = new Date().toISOString();
+                    }
+                }
+
+                console.log('Final parsed delivery data:', data);
+                return data;
+            } catch (error) {
+                console.error('Error parsing delivery data:', error);
+                return null;
+            }
+        }
+
+        function populateDeliveryNote() {
+            const data = getDeliveryData();
+            if (!data) return;
+
+            try {
+                // Basic fields population
+                document.getElementById('delivery_number').textContent = data.delivery_number || 'N/A';
+                document.getElementById('date_issued').textContent = formatDate(data.date_issued) || 'N/A';
+                document.getElementById('receiver_name').textContent = data.receiver_name || 'N/A';
+
+                // Products table population
+                const table = document.getElementById('itemsTable');
+                table.innerHTML = '';
+
+                if (Array.isArray(data.products) && data.products.length > 0) {
+                    data.products.forEach((product, index) => {
+                        if (product && typeof product === 'object') {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${index + 1}</td>
+                                <td>${product.description || 'N/A'}</td>
+                                <td>${product.quantity || '0'}</td>
+                                <td>${product.unit || 'N/A'}</td>
+                            `;
+                            table.appendChild(row);
+                        }
+                    });
+                } else {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="4" style="text-align: center;">No products available</td>';
+                    table.appendChild(row);
+                }
+
+                // Generate verification section
+                document.getElementById('verification_delivery_number').textContent = data.delivery_number || 'N/A';
+                document.getElementById('verification_date_issued').textContent = formatDate(data.date_issued) || 'N/A';
+
+                // Generate QR Code
+                generateQRCode(data);
+
+                // Auto-download PDF after a short delay
+                setTimeout(downloadPDF, 1000);
+
+            } catch (error) {
+                console.error('Error in populateDeliveryNote:', error);
+            }
+        }
+
+        function generateQRCode(data) {
+            const verificationUrl = `https://sarurapetroleumltd.com/verify.html?id=SP-DN-${data.delivery_number}`;
+            new QRCode(document.getElementById('qrCode'), {
+                text: verificationUrl,
+                width: 100,
+                height: 100,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return 'N/A';
+            return date.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        function downloadPDF() {
+            const element = document.querySelector('.invoice');
+            const opt = {
+                margin: 0,
+                filename: `DeliveryNote_${document.getElementById('delivery_number').textContent}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2,
+                    useCORS: true,
+                    logging: true,
+                    letterRendering: true,
+                    width: element.offsetWidth,
+                    height: element.offsetHeight
+                },
+                jsPDF: { 
+                    unit: 'mm', 
+                    format: 'a4', 
+                    orientation: 'portrait',
+                    compress: true
+                }
+            };
+
+            // Wait for images to load
+            Promise.all(Array.from(document.images).map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise(resolve => img.addEventListener('load', resolve));
+            }))
+            .then(() => {
+                html2pdf().from(element).set(opt).save()
+                    .catch(err => console.error('PDF generation error:', err));
+            });
+        }
+
+        window.onload = async function() {
+            await populateDeliveryNote();
+            // Short delay to ensure everything is rendered
+            setTimeout(downloadPDF, 1000);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Transport Record - Sarura Petroleum</title>
+    <link rel="icon" href="logo.jpg" type="image/jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-light': '#f5f5f5',
+                        'custom-dark': '#121212',
+                        'custom-accent': '#4ade80',
+                        'custom-accent-hover': '#22c55e',
+                        'input-bg': '#282828',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://kit.fontawesome.com/d00c9b568a.js" crossorigin="anonymous"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-auth-compat.js"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <style>
+        .green-gradient {
+            background: linear-gradient(to right, #4ade80, #22c55e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .float { animation: float 3s ease-in-out infinite; }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .dark .glass-effect {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .form-input {
+            @apply w-full rounded-lg border-2 border-gray-600 bg-gray-100 text-gray-800
+            px-4 py-2 focus:border-custom-accent focus:ring-2 focus:ring-custom-accent
+            focus:ring-opacity-20 focus:outline-none transition-all duration-300;
+        }
+        .dark .form-input {
+            @apply bg-black text-white;
+        }
+        .dark .form-input::placeholder {
+            @apply text-gray-500;
+        }
+        .dark select.form-input {
+            @apply bg-black border-gray-700 text-white;
+        }
+        .dark textarea.form-input {
+            @apply bg-black border-gray-700 text-white;
+        }
+        .form-input::placeholder {
+            @apply text-gray-400;
+        }
+        .form-input.pl-10 {
+            padding-left: 2.5rem;
+        }
+        .form-label {
+            @apply block mb-2 font-medium text-gray-700 dark:text-gray-300;
+        }
+        .form-label:hover {
+            @apply text-custom-accent;
+        }
+        .form-container {
+            @apply bg-gray-100 dark:bg-gray-800 
+            rounded-xl p-6 shadow-xl border border-gray-300 dark:border-gray-700;
+        }
+        .btn-primary {
+            @apply bg-custom-accent hover:bg-custom-accent-hover text-white font-bold py-2 px-4 
+            rounded-lg transition-colors duration-300 shadow-md hover:shadow-lg;
+        }
+        .btn-secondary {
+            @apply bg-gray-700 dark:bg-gray-700 hover:bg-gray-600 dark:hover:bg-gray-600 text-gray-200 dark:text-gray-200 
+            font-bold py-2 px-4 rounded-lg transition-colors duration-300 shadow-md hover:shadow-lg;
+        }
+        .modal {
+            @apply fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50;
+        }
+        .modal.show {
+            @apply flex;
+        }
+        .modal-content {
+            @apply fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
+            max-w-4xl w-full mx-4 bg-gray-800 dark:bg-gray-900 p-8 rounded-lg shadow-lg
+            scale-95 opacity-0 transition-all duration-300 z-50;
+        }
+        .modal.show .modal-content {
+            @apply scale-100 opacity-100;
+        }
+        .dark .form-input {
+            background-color: #000000;
+            color: #ffffff;
+            border-color: #374151;
+        }
+        .dark .form-input::placeholder {
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body class="bg-custom-light dark:bg-custom-dark text-gray-800 dark:text-gray-200 min-h-screen flex flex-col">
+    <div id="particles-js" class="fixed inset-0 z-0"></div>
+
+    <header class="glass-effect sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="logo.jpg" alt="Sarura Petroleum Logo" class="h-10 w-10 mr-2 rounded-full border-2 border-custom-accent animate-pulse-slow">
+                <h1 class="text-2xl font-bold green-gradient">SARURA PETROLEUM</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="toggle-theme" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300" aria-label="Toggle theme">
+                    <i class="fas fa-adjust"></i>
+                </button>
+                <a href="transport.html" class="text-gray-800 dark:text-gray-200 hover:text-custom-accent transition-colors duration-300" aria-label="Go back">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-8 relative z-10">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold green-gradient mb-8 text-center">New Transport Record</h2>
+            
+            <form id="transportForm" class="form-container space-y-8">
+                <div class="space-y-6">
+                    <h3 class="text-xl font-semibold text-custom-accent mb-4">Basic Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="form-group">
+                            <label class="form-label flex items-center gap-2" for="date">
+                                <i class="fas fa-calendar text-custom-accent" aria-hidden="true"></i>
+                                Date
+                            </label>
+                            <input type="date" id="date" name="date" required 
+                                class="form-input hover:border-custom-accent focus:border-custom-accent">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label flex items-center gap-2" for="truckNumber">
+                                <i class="fas fa-truck text-custom-accent" aria-hidden="true"></i>
+                                Truck Number
+                            </label>
+                            <input type="text" id="truckNumber" name="truckNumber" required 
+                                class="form-input hover:border-custom-accent focus:border-custom-accent" 
+                                placeholder="Enter truck number">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <h3 class="text-xl font-semibold text-custom-accent mb-4">Client Details</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="form-group">
+                            <label class="form-label flex items-center gap-2" for="hiredBy">
+                                <i class="fas fa-user text-custom-accent" aria-hidden="true"></i>
+                                Hired By
+                            </label>
+                            <input type="text" id="hiredBy" name="hiredBy" required 
+                                class="form-input hover:border-custom-accent focus:border-custom-accent" 
+                                placeholder="Enter client name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label flex items-center gap-2" for="destination">
+                                <i class="fas fa-map-marker-alt text-custom-accent" aria-hidden="true"></i>
+                                Destination
+                            </label>
+                            <input type="text" id="destination" name="destination" required 
+                                class="form-input hover:border-custom-accent focus:border-custom-accent" 
+                                placeholder="Enter destination">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <h3 class="text-xl font-semibold text-custom-accent mb-4">Transport Details</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="form-group">
+                            <label class="form-label flex items-center gap-2" for="product">
+                                <i class="fas fa-box text-custom-accent" aria-hidden="true"></i>
+                                Product
+                            </label>
+                            <input type="text" id="product" name="product" required 
+                                class="form-input hover:border-custom-accent focus:border-custom-accent" 
+                                placeholder="Enter product">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label flex items-center gap-2" for="observedVolume">
+                                <i class="fas fa-flask text-custom-accent" aria-hidden="true"></i>
+                                Observed Volume
+                            </label>
+                            <input type="number" id="observedVolume" name="observedVolume" required 
+                                class="form-input hover:border-custom-accent focus:border-custom-accent" 
+                                placeholder="Enter volume">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label flex items-center gap-2" for="at20">
+                                <i class="fas fa-temperature-high text-custom-accent" aria-hidden="true"></i>
+                                At 20°
+                            </label>
+                            <input type="number" id="at20" name="at20" required 
+                                class="form-input hover:border-custom-accent focus:border-custom-accent" 
+                                placeholder="Enter at 20°">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <h3 class="text-xl font-semibold text-custom-accent mb-4">Payment Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="form-group">
+                            <label class="form-label flex items-center gap-2" for="rate">
+                                <i class="fas fa-dollar-sign text-custom-accent" aria-hidden="true"></i>
+                                Rate
+                            </label>
+                            <input type="number" id="rate" name="rate" required 
+                                class="form-input hover:border-custom-accent focus:border-custom-accent" 
+                                placeholder="Enter rate">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label flex items-center gap-2" for="paymentStatus">
+                                <i class="fas fa-money-check-alt text-custom-accent" aria-hidden="true"></i>
+                                Payment Status
+                            </label>
+                            <select id="paymentStatus" name="paymentStatus" required 
+                                class="form-input hover:border-custom-accent focus:border-custom-accent">
+                                <option value="unpaid">Unpaid</option>
+                                <option value="partial">Partial</option>
+                                <option value="paid">Paid</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-4 mt-8 pt-4 border-t dark:border-gray-700">
+                    <a href="transport.html" class="btn-secondary flex items-center gap-2">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn-primary flex items-center gap-2">
+                        <i class="fas fa-save" aria-hidden="true"></i>
+                        Save Record
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="glass-effect py-4 mt-auto">
+        <div class="container mx-auto px-4 text-center text-sm text-gray-600 dark:text-gray-400">
+            © 2024 Sarura Petroleum. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        particlesJS("particles-js", {
+            particles: {
+                number: { value: 80, density: { enable: true, value_area: 800 } },
+                color: { value: "#4ade80" },
+                shape: { type: "circle" },
+                opacity: { value: 0.5, random: false, anim: { enable: false } },
+                size: { value: 3, random: true, anim: { enable: false } },
+                line_linked: { enable: true, distance: 150, color: "#4ade80", opacity: 0.4, width: 1 },
+                move: { enable: true, speed: 2, direction: "none", random: false, straight: false, out_mode: "out", bounce: false }
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: { onhover: { enable: true, mode: "repulse" }, onclick: { enable: true, mode: "push" }, resize: true },
+                modes: { repulse: { distance: 100, duration: 0.4 }, push: { particles_nb: 4 } }
+            },
+            retina_detect: true
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggleThemeButton = document.getElementById('toggle-theme');
+            toggleThemeButton.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            });
+
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+
+            firebase.auth().onAuthStateChanged(user => {
+                if (!user) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+            });
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const transportId = urlParams.get('id');
+            
+            if (transportId) {
+                document.querySelector('h2').textContent = 'Edit Transport Record';
+                
+                firebase.auth().onAuthStateChanged(async user => {
+                    if (!user) {
+                        window.location.href = 'index.html';
+                        return;
+                    }
+
+                    try {
+                        const doc = await firebase.firestore()
+                            .collection('users')
+                            .doc(user.uid)
+                            .collection('transports')
+                            .doc(transportId)
+                            .get();
+
+                        if (doc.exists) {
+                            const data = doc.data();
+                            document.getElementById('date').value = data.date;
+                            document.getElementById('truckNumber').value = data.truckNumber;
+                            document.getElementById('hiredBy').value = data.hiredBy;
+                            document.getElementById('destination').value = data.destination;
+                            document.getElementById('rate').value = data.rate;
+                            document.getElementById('product').value = data.product;
+                            document.getElementById('observedVolume').value = data.observedVolume;
+                            document.getElementById('at20').value = data.at20;
+                            document.getElementById('paymentStatus').value = data.paymentStatus;
+                        }
+                    } catch (error) {
+                        console.error("Error loading transport:", error);
+                        alert('Error loading transport data');
+                    }
+                });
+            }
+
+            document.getElementById('transportForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const user = firebase.auth().currentUser;
+                if (!user) {
+                    alert('Please login first');
+                    return;
+                }
+
+                const formData = {
+                    date: document.getElementById('date').value,
+                    truckNumber: document.getElementById('truckNumber').value,
+                    hiredBy: document.getElementById('hiredBy').value,
+                    destination: document.getElementById('destination').value,
+                    rate: document.getElementById('rate').value,
+                    product: document.getElementById('product').value,
+                    observedVolume: document.getElementById('observedVolume').value,
+                    at20: document.getElementById('at20').value,
+                    paymentStatus: document.getElementById('paymentStatus').value,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    userEmail: user.email,
+                    userId: user.uid
+                };
+
+                try {
+                    const transportRef = firebase.firestore()
+                        .collection('users')
+                        .doc(user.uid)
+                        .collection('transports');
+
+                    if (transportId) {
+                        await transportRef.doc(transportId).update(formData);
+                    } else {
+                        await transportRef.add(formData);
+                    }
+                    
+                    window.location.href = 'transport.html';
+                } catch (error) {
+                    alert('Error saving transport record: ' + error.message);
+                }
+            });
+        });
+
+        firebase.auth().onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>

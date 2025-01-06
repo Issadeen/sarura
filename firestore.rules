@@ -1,0 +1,100 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Match user documents
+    match /users/{userId} {
+      // Allow access to user document
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Allow access to buyers collection and documents
+      match /buyers/{buyerId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        
+        // Allow access to orders subcollection under buyers
+        match /orders/{orderId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+
+        // Add credits subcollection rules
+        match /credits/{creditId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+
+      // Allow access to orders collection
+      match /orders/{orderId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Payments subcollection
+      match /payments/{paymentId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Transports subcollection
+      match /transports/{transportId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Trucks subcollection
+      match /trucks/{truckId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // User Reports subcollection
+      match /userReports/{reportId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // General Reports subcollection
+      match /reports/{reportId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Orders subcollections
+      match /porders/{orderId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Subcontractors subcollection
+      match /subcontractors/{subcontractorId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+
+        // Payments within Subcontractors
+        match /payments/{paymentId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+
+      // Proforma Invoices subcollection
+      match /proformaInvoices/{pfiId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Delivery Notes subcollection
+      match /deliveryNotes/{deliveryId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Add rules for invoices collection
+      match /invoices/{invoiceId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Allow read access to invoice numbers
+    match /invoiceNumbers/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Allow read access to previous invoices
+    match /buyers/{buyerId}/orders/{orderId} {
+      allow read: if request.auth != null && request.auth.uid == buyerId;
+      allow write: if request.auth != null && request.auth.uid == buyerId;
+    }
+
+    // ...other rules...
+  }
+}
