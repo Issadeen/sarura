@@ -376,7 +376,7 @@
                 description: desc,
                 quantity: quantities[i],
                 unit: units[i]
-            }));
+            })).filter(item => item.description && item.quantity > 0); // Only include valid items
 
             return {
                 delivery_number: form.delivery_number.value,
@@ -390,16 +390,26 @@
         async function generatePDF() {
             const formData = getFormData();
             try {
-                const data = {
-                    delivery_number: formData.delivery_number,
-                    date_issued: formData.date_issued,
-                    receiver_name: formData.receiver_name,
-                    products: JSON.stringify(formData.products || []),
-                    created_at: formData.created_at
-                };
+                // Create query parameters
+                const queryParams = new URLSearchParams();
                 
-                const queryString = new URLSearchParams(data).toString();
-                window.open(`https://sarurapetroleumltd.com/delivery-template.html?${queryString}`, '_blank');
+                // Special handling for products array
+                if (formData.products && Array.isArray(formData.products)) {
+                    const productsStr = JSON.stringify(formData.products);
+                    queryParams.append('products', encodeURIComponent(productsStr));
+                }
+
+                // Add other fields
+                for (const [key, value] of Object.entries(formData)) {
+                    if (key !== 'products' && value !== undefined) {
+                        queryParams.append(key, encodeURIComponent(value.toString()));
+                    }
+                }
+
+                // Open template in new window
+                const url = `delivery-template.html?${queryParams.toString()}`;
+                console.log('Generated URL:', url);
+                window.open(url, '_blank');
             } catch (error) {
                 console.error("Error generating PDF:", error);
                 alert("Error generating PDF");
@@ -525,4 +535,4 @@
         }
     </script>
 </body>
-</html> 
+</html>
