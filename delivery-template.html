@@ -243,15 +243,25 @@
         }
 
         function generateQRCode(data) {
-            const verificationUrl = `https://sarurapetroleumltd.com/verify.html?id=SP-DN-${data.delivery_number}`;
-            new QRCode(document.getElementById('qrCode'), {
-                text: verificationUrl,
-                width: 100,
-                height: 100,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
+            try {
+                // Clean and format the delivery number
+                const cleanNumber = data.delivery_number.replace(/\//g, '-');
+                // Create verification URL with proper format
+                const verificationUrl = `${window.location.origin}/verify.html?id=SP-DN-${cleanNumber}`;
+                
+                console.log('Generated verification URL:', verificationUrl); // For debugging
+                
+                new QRCode(document.getElementById('qrCode'), {
+                    text: verificationUrl,
+                    width: 100,
+                    height: 100,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } catch (error) {
+                console.error('Error generating QR code:', error);
+            }
         }
 
         function formatDate(dateString) {
