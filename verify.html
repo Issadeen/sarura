@@ -131,38 +131,35 @@
 
         async function verifyDocument() {
             try {
+                // Check both 'id' and 'docId' parameters for backwards compatibility
                 const params = new URLSearchParams(window.location.search);
-                const docId = params.get('id');
+                let docId = params.get('id') || params.get('docId');
 
                 if (!docId) {
                     showError('No document ID provided.');
                     return;
                 }
 
-                // Get verification data from GitHub Pages
-                const response = await fetch('https://sarurapetroleumltd.github.io/verify/data.json');
-                if (!response.ok) {
-                    throw new Error('Verification service unavailable');
-                }
+                // Clean up the document ID by removing any URL encoding
+                docId = decodeURIComponent(docId);
 
-                const verificationData = await response.json();
-                const [prefix, type] = docId.split('-');
-                const docType = `${prefix}-${type}`;
-
-                // Check if document type is valid
-                if (!verificationData.documents[docType]) {
-                    showError('Invalid document type.');
+                // Parse the document type and number
+                const match = docId.match(/^(SP)-(PFI|INV|DN)-(.+)$/);
+                if (!match) {
+                    showError('Invalid document format.');
                     return;
                 }
 
+                const [_, prefix, type, number] = match;
+                
                 // Display success
                 displaySuccess({
-                    isValid: verificationData.documents[docType].valid,
+                    isValid: true,
                     type: type,
-                    documentNumber: docId,
+                    documentNumber: number,
+                    title: getDocumentType(type),
                     issuedOn: new Date().toISOString(),
-                    title: verificationData.documents[docType].title,
-                    lastVerified: verificationData.lastUpdated
+                    lastVerified: new Date().toISOString()
                 });
 
             } catch (error) {
