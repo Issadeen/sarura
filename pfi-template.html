@@ -437,11 +437,11 @@
             <table>
                 <tr>
                     <th>NO:</th>
-                    <th>DESIGNATION</th>
-                    <th>PRODUCT</th>
-                    <th>TRUCKS</th>
-                    <th>UNIT PRICE</th>
-                    <th>AMOUNT($)</th>
+                    <th>DESCRIPTION</th>
+                    <th>HS CODE</th>
+                    <th>QUANTITY</th>
+                    <th>UNIT PRICE ($)</th>
+                    <th>AMOUNT ($)</th>
                 </tr>
                 <tbody id="productsTable">
                     <!-- Products will be dynamically added here -->
@@ -595,8 +595,8 @@
                 if (Array.isArray(data.products) && data.products.length > 0) {
                     data.products.forEach((product, index) => {
                         if (product && typeof product === 'object') {
-                            const row = document.createElement('tr');
                             const amount = ((product.quantity || 0) * (product.unitPrice || 0)).toFixed(2);
+                            const row = document.createElement('tr');
                             row.innerHTML = `
                                 <td>${index + 1}</td>
                                 <td>${product.description || 'N/A'}</td>
