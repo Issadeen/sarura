@@ -147,7 +147,7 @@
                                         <input type="number" name="quantities[]" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-700 border-transparent">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium">Unit Price:</label>
+                                        <label class="block text-sm font-medium">Unit Price ($):</label>
                                         <input type="number" name="unitPrices[]" step="0.01" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-700 border-transparent">
                                     </div>
                                 </div>
@@ -383,18 +383,16 @@
             const form = document.getElementById('pfiForm');
             const descriptions = [...document.getElementsByName('descriptions[]')].map(el => el.value);
             const hsCodes = [...document.getElementsByName('hsCodes[]')].map(el => el.value);
-            const quantities = [...document.getElementsByName('quantities[]')].map(el => parseInt(el.value));
-            const unitPrices = [...document.getElementsByName('unitPrices[]')].map(el => parseFloat(el.value));
+            const quantities = [...document.getElementsByName('quantities[]')].map(el => parseFloat(el.value) || 0);
+            const unitPrices = [...document.getElementsByName('unitPrices[]')].map(el => parseFloat(el.value) || 0);
             
             const products = descriptions.map((desc, i) => ({
                 description: desc,
                 hsCode: hsCodes[i],
                 quantity: quantities[i],
                 unitPrice: unitPrices[i],
-                amount: quantities[i] * unitPrices[i]
-            }));
-
-            const totalAmount = products.reduce((sum, product) => sum + product.amount, 0);
+                total: quantities[i] * unitPrices[i]
+            })).filter(item => item.description && item.quantity > 0);
 
             return {
                 billTo: form.billTo.value,
@@ -402,10 +400,10 @@
                 pfiNumber: form.pfiNumber.value,
                 date: form.date.value,
                 customerId: form.customerId.value,
-                currency: form.currency.value,
+                currency: form.currency.value || 'USD',
                 paymentTerms: form.paymentTerms.value,
                 products,
-                totalAmount,
+                totalAmount: products.reduce((sum, item) => sum + item.total, 0),
                 // Ensure createdAt is a valid ISO string
                 createdAt: new Date().toISOString(),
                 // Add stampDate field as ISO string
